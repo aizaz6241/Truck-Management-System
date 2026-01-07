@@ -5,7 +5,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { useRouter } from "next/navigation";
 
 export default function DriverNav() {
-    const { t } = useLanguage();
+    const { t, toggleLanguage } = useLanguage();
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -21,6 +21,20 @@ export default function DriverNav() {
                     {t("app.title")} - {t("driver.dashboard")}
                 </div>
                 <div style={{ display: "flex", gap: "1rem" }}>
+                    <button
+                        onClick={toggleLanguage}
+                        style={{
+                            background: "none",
+                            border: "1px solid var(--primary-color)",
+                            borderRadius: "4px",
+                            color: "var(--primary-color)",
+                            fontSize: "0.9rem",
+                            padding: "0.25rem 0.5rem",
+                            cursor: "pointer"
+                        }}
+                    >
+                        {t("nav.language")}
+                    </button>
                     <button onClick={handleLogout} style={{ background: "none", border: "none", color: "var(--danger-color)", fontSize: "1rem" }}>
                         {t("nav.logout")}
                     </button>

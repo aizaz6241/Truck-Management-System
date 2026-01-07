@@ -44,6 +44,11 @@ export default function AdminTripForm({ trip, drivers, vehicles }: { trip?: any,
             </div>
 
             <div className="form-group">
+                <label className="form-label">Time</label>
+                <input name="time" type="time" defaultValue={trip ? new Date(trip.date).toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5)} className="form-input" required />
+            </div>
+
+            <div className="form-group">
                 <label className="form-label">Material Type</label>
                 <select name="materialType" defaultValue={trip?.materialType || ""} className="form-select">
                     <option value="">-- None --</option>

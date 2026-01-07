@@ -14,6 +14,7 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
     const [fileName, setFileName] = useState<string>(initialData?.paperImage ? "Existing file attached" : "");
 
     const defaultDate = initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const defaultTime = initialData?.date ? new Date(initialData.date).toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -26,7 +27,7 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
             {state?.message && <div style={{ color: "red", marginBottom: "1rem" }}>{state.message}</div>}
 
             <div className="form-group">
-                <label className="form-label">Driver Name</label>
+                <label className="form-label">{t("trip.driver")}</label>
                 <input className="form-input" value={driverName} disabled style={{ backgroundColor: "#e9ecef" }} />
                 {/* Ensure driverId is sent even if disabled input doesn't send it? Actually createTrip gets ID from session. updateTrip gets it from form. */}
                 {/* For update, we need to send driverId if the action expects it. The action reads driverId from formData. 
@@ -47,9 +48,9 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
             </div>
 
             <div className="form-group">
-                <label className="form-label">Vehicle</label>
+                <label className="form-label">{t("trip.vehicle")}</label>
                 <select name="vehicleId" className="form-select" required defaultValue={initialData?.vehicleId || ""}>
-                    <option value="" disabled>-- Select Vehicle --</option>
+                    <option value="" disabled>{t("trip.selectVehicle")}</option>
                     {vehicles.map(v => (
                         <option key={v.id} value={v.id}>{v.number} - {v.model}</option>
                     ))}
@@ -57,24 +58,29 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
             </div>
 
             <div className="form-group">
-                <label className="form-label">From Location</label>
+                <label className="form-label">{t("trip.from")}</label>
                 <input name="fromLocation" defaultValue={initialData?.fromLocation} className="form-input" required />
             </div>
 
             <div className="form-group">
-                <label className="form-label">To Location</label>
+                <label className="form-label">{t("trip.to")}</label>
                 <input name="toLocation" defaultValue={initialData?.toLocation} className="form-input" required />
             </div>
 
             <div className="form-group">
-                <label className="form-label">Date</label>
+                <label className="form-label">{t("trip.date")}</label>
                 <input name="date" type="date" defaultValue={defaultDate} className="form-input" required />
             </div>
 
             <div className="form-group">
-                <label className="form-label">Material Type</label>
+                <label className="form-label">Time</label>
+                <input name="time" type="time" defaultValue={defaultTime} className="form-input" required />
+            </div>
+
+            <div className="form-group">
+                <label className="form-label">{t("trip.material")}</label>
                 <select name="materialType" className="form-select" required defaultValue={initialData?.materialType || ""}>
-                    <option value="" disabled>-- Select Material --</option>
+                    <option value="" disabled>{t("trip.selectMaterial")}</option>
                     <option value="Concrete">Concrete</option>
                     <option value="Asphalt">Asphalt</option>
                     <option value="Road Base">Road Base</option>
@@ -84,16 +90,16 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
             </div>
 
             <div className="form-group">
-                <label className="form-label">Upload Paper</label>
+                <label className="form-label">{t("trip.upload")}</label>
                 <div style={{ display: "flex", gap: "1rem", marginBottom: "0.5rem" }}>
                     {/* Gallery Button */}
                     <label className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#6c757d", color: "white" }}>
-                        Select from Gallery
+                        {t("trip.gallery")}
                         <input type="file" name="paper" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
                     </label>
                     {/* Camera Button */}
                     <label className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#17a2b8", color: "white" }}>
-                        Capture with Camera
+                        {t("trip.camera")}
                         <input type="file" name="paper_camera" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => {
                             // Copy to main input if needed, or backend handles both. 
                             // Backend needs to check both names or loop formData.
@@ -123,10 +129,10 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
 
                 <div style={{ display: "flex", gap: "1rem" }}>
                     <label htmlFor="paper_gallery" className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#6c757d", color: "white" }}>
-                        Gallery
+                        {t("trip.gallery")}
                     </label>
                     <label htmlFor="paper_camera" className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#17a2b8", color: "white" }}>
-                        Camera
+                        {t("trip.camera")}
                     </label>
                 </div>
                 {fileName && <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "green" }}>Selected: {fileName}</div>}

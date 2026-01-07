@@ -70,26 +70,26 @@ export default function DriverDashboardClient({
 
             <div className="card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                    <h3>My Trips ({totalTrips})</h3>
+                    <h3>{t("driver.pageTitle")} ({totalTrips})</h3>
                 </div>
 
                 {/* Filters */}
                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "end" }}>
                     <div style={{ flex: 1, minWidth: "150px" }}>
-                        <label className="form-label" style={{ marginBottom: "0.25rem" }}>Vehicle</label>
+                        <label className="form-label" style={{ marginBottom: "0.25rem" }}>{t("trip.vehicle")}</label>
                         <select className="form-select" value={filterVehicle} onChange={e => setFilterVehicle(e.target.value)}>
-                            <option value="">All Vehicles</option>
+                            <option value="">{t("trip.selectVehicle")}</option>
                             {vehicles.map(v => (
                                 <option key={v.id} value={v.id}>{v.number}</option>
                             ))}
                         </select>
                     </div>
                     <div style={{ flex: 1, minWidth: "150px" }}>
-                        <label className="form-label" style={{ marginBottom: "0.25rem" }}>Material</label>
-                        <input className="form-input" placeholder="e.g. Cement" value={filterMaterial} onChange={e => setFilterMaterial(e.target.value)} />
+                        <label className="form-label" style={{ marginBottom: "0.25rem" }}>{t("trip.material")}</label>
+                        <input className="form-input" placeholder={t("trip.material")} value={filterMaterial} onChange={e => setFilterMaterial(e.target.value)} />
                     </div>
                     <div style={{ flex: 1, minWidth: "150px" }}>
-                        <label className="form-label" style={{ marginBottom: "0.25rem" }}>Date</label>
+                        <label className="form-label" style={{ marginBottom: "0.25rem" }}>{t("trip.date")}</label>
                         <input type="date" className="form-input" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
                     </div>
                     <button className="btn btn-primary" onClick={applyFilters}>Filter</button>
@@ -100,11 +100,11 @@ export default function DriverDashboardClient({
                     <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid var(--border-color)" }}>
                         <thead>
                             <tr style={{ backgroundColor: "var(--background-color)", textAlign: "left" }}>
-                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>Date</th>
-                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>Vehicle</th>
-                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>Route</th>
-                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>Material</th>
-                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>Actions</th>
+                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>{t("trip.date")}</th>
+                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>{t("trip.vehicle")}</th>
+                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>{t("trip.from")} / {t("trip.to")}</th>
+                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>{t("trip.material")}</th>
+                                <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -124,9 +124,9 @@ export default function DriverDashboardClient({
                                     </td>
                                     <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)", display: "flex", gap: "0.5rem", alignItems: "center" }}>
                                         {trip.paperImage && (
-                                            <a href={trip.paperImage} target="_blank" className="btn" style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem", backgroundColor: "#17a2b8", color: "white", textDecoration: "none" }}>Paper</a>
+                                            <a href={trip.paperImage} target="_blank" className="btn" style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem", backgroundColor: "#17a2b8", color: "white", textDecoration: "none" }}>{t("trip.paper")}</a>
                                         )}
-                                        <Link href={`/driver/trips/${trip.id}/edit`} className="btn" style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem", backgroundColor: "var(--primary-color)", color: "white", textDecoration: "none" }}>Edit</Link>
+                                        <Link href={`/driver/trips/${trip.id}/edit`} className="btn" style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem", backgroundColor: "var(--primary-color)", color: "white", textDecoration: "none" }}>{t("common.edit")}</Link>
                                         <DeleteTripButton id={trip.id} />
                                     </td>
                                 </tr>

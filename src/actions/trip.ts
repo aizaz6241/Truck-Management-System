@@ -62,16 +62,24 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
     const fromLocation = formData.get("fromLocation") as string;
     const toLocation = formData.get("toLocation") as string;
     const dateStr = formData.get("date") as string;
-    const vehicleId = parseInt(formData.get("vehicleId") as string);
-    const driverId = parseInt(formData.get("driverId") as string);
+    const timeStr = formData.get("time") as string;
+    const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
-    const paperFile = formData.get("paper") as File;
 
-    if (!fromLocation || !toLocation || !dateStr || !vehicleId || !driverId) {
+    // Check for 'paper' file (new upload)
+    const paperFile = formData.get("paper") as File; // Standard upload
+    // Optional: add paperCamera check if needed for update too, though Admin usually uploads from file.
+
+    const driverId = parseInt(formData.get("driverId") as string);
+
+    // Combine Date and Time
+    const combinedDateTime = timeStr ? new Date(`${dateStr}T${timeStr}`) : new Date(dateStr);
+
+    if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr || !driverId) {
         return { message: "All fields are required" };
     }
 
-    let paperPath = undefined; // undefined means do not update
+    let paperPath = undefined;
     if (paperFile && paperFile.size > 0) {
         try {
             const buffer = Buffer.from(await paperFile.arrayBuffer());
@@ -91,13 +99,13 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
         await prisma.trip.update({
             where: { id },
             data: {
+                driverId: driverId || undefined,
+                vehicleId: parseInt(vehicleIdStr),
                 fromLocation,
                 toLocation,
-                date: new Date(dateStr),
-                vehicleId,
-                driverId,
+                date: combinedDateTime,
                 materialType,
-                ...(paperPath && { paperImage: paperPath })
+                ...(paperPath ? { paperImage: paperPath } : {})
             }
         });
     } catch (e) {
@@ -133,6 +141,7 @@ export async function createTrip(prevState: any, formData: FormData) {
     const fromLocation = formData.get("fromLocation") as string;
     const toLocation = formData.get("toLocation") as string;
     const dateStr = formData.get("date") as string;
+    const timeStr = formData.get("time") as string; // "HH:MM"
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
 
@@ -145,6 +154,9 @@ export async function createTrip(prevState: any, formData: FormData) {
     if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr) {
         return { message: "All fields are required" };
     }
+
+    // Combine Date and Time
+    const combinedDateTime = timeStr ? new Date(`${dateStr}T${timeStr}`) : new Date(dateStr);
 
     let paperPath = null;
     if (paperFile && paperFile.size > 0) {
@@ -172,7 +184,7 @@ export async function createTrip(prevState: any, formData: FormData) {
                 vehicleId,
                 fromLocation,
                 toLocation,
-                date: new Date(dateStr),
+                date: combinedDateTime,
                 materialType,
                 paperImage: paperPath
             },

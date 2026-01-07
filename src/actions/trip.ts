@@ -1,0 +1,191 @@
+"use server";
+
+import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { writeFile, mkdir, unlink } from "fs/promises";
+import path from "path";
+import { existsSync } from "fs";
+
+export async function deleteTrip(id: number) {
+    const session = await getSession();
+    if (!session || !session.user) {
+        return { message: "Unauthorized" };
+    }
+
+    const tripToCheck = await prisma.trip.findUnique({ where: { id } });
+    if (!tripToCheck) return { message: "Trip not found" };
+
+    const isDriverOwner = session.user.role === "DRIVER" && tripToCheck.driverId === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+
+    if (!isDriverOwner && !isAdmin) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        const trip = await prisma.trip.findUnique({ where: { id } });
+        if (trip && trip.paperImage) {
+            // Try to delete the file
+            const filePath = path.join(process.cwd(), "public", trip.paperImage);
+            if (existsSync(filePath)) {
+                await unlink(filePath).catch(e => console.error("Failed to delete file:", e));
+            }
+        }
+
+        await prisma.trip.delete({ where: { id } });
+    } catch (e) {
+        return { message: "Failed to delete trip" };
+    }
+
+    revalidatePath("/admin/trips");
+    revalidatePath("/driver");
+}
+
+export async function updateTrip(id: number, prevState: any, formData: FormData) {
+    const session = await getSession();
+    if (!session || !session.user) {
+        return { message: "Unauthorized" };
+    }
+
+    const tripToCheck = await prisma.trip.findUnique({ where: { id } });
+    if (!tripToCheck) return { message: "Trip not found" };
+
+    const isDriverOwner = session.user.role === "DRIVER" && tripToCheck.driverId === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+
+    if (!isDriverOwner && !isAdmin) {
+        return { message: "Unauthorized" };
+    }
+
+    const fromLocation = formData.get("fromLocation") as string;
+    const toLocation = formData.get("toLocation") as string;
+    const dateStr = formData.get("date") as string;
+    const vehicleId = parseInt(formData.get("vehicleId") as string);
+    const driverId = parseInt(formData.get("driverId") as string);
+    const materialType = formData.get("materialType") as string;
+    const paperFile = formData.get("paper") as File;
+
+    if (!fromLocation || !toLocation || !dateStr || !vehicleId || !driverId) {
+        return { message: "All fields are required" };
+    }
+
+    let paperPath = undefined; // undefined means do not update
+    if (paperFile && paperFile.size > 0) {
+        try {
+            const buffer = Buffer.from(await paperFile.arrayBuffer());
+            const filename = `${Date.now()}-${paperFile.name.replace(/\s/g, '_')}`;
+            const uploadDir = path.join(process.cwd(), "public", "uploads");
+            await mkdir(uploadDir, { recursive: true });
+            await writeFile(path.join(uploadDir, filename), buffer);
+            paperPath = `/uploads/${filename}`;
+
+            // Note: Could delete old file here if strict cleanup needed
+        } catch (e) {
+            console.error("File upload failed:", e);
+        }
+    }
+
+    try {
+        await prisma.trip.update({
+            where: { id },
+            data: {
+                fromLocation,
+                toLocation,
+                date: new Date(dateStr),
+                vehicleId,
+                driverId,
+                materialType,
+                ...(paperPath && { paperImage: paperPath })
+            }
+        });
+    } catch (e) {
+        return { message: "Failed to update trip" };
+    }
+
+    revalidatePath("/admin/trips");
+    redirect("/admin/trips");
+}
+
+export async function createTrip(prevState: any, formData: FormData) {
+    const session = await getSession();
+    if (!session || !session.user) {
+        return { message: "Unauthorized" };
+    }
+
+    const isAdmin = session.user.role === "ADMIN";
+    const isDriver = session.user.role === "DRIVER";
+
+    if (!isAdmin && !isDriver) {
+        return { message: "Unauthorized" };
+    }
+
+    let driverId: number;
+    if (isAdmin) {
+        const driverIdStr = formData.get("driverId") as string;
+        if (!driverIdStr) return { message: "Driver is required" };
+        driverId = parseInt(driverIdStr);
+    } else {
+        driverId = session.user.id;
+    }
+
+    const fromLocation = formData.get("fromLocation") as string;
+    const toLocation = formData.get("toLocation") as string;
+    const dateStr = formData.get("date") as string;
+    const vehicleIdStr = formData.get("vehicleId") as string;
+    const materialType = formData.get("materialType") as string;
+
+    // Check both standard 'paper' and 'paperCamera'
+    let paperFile = formData.get("paper") as File;
+    if (!paperFile || paperFile.size === 0) {
+        paperFile = formData.get("paperCamera") as File;
+    }
+
+    if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr) {
+        return { message: "All fields are required" };
+    }
+
+    let paperPath = null;
+    if (paperFile && paperFile.size > 0) {
+        try {
+            const buffer = Buffer.from(await paperFile.arrayBuffer());
+            const filename = `${Date.now()}-${paperFile.name.replace(/\s/g, '_')}`;
+            const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+            // Ensure directory exists
+            await mkdir(uploadDir, { recursive: true });
+
+            await writeFile(path.join(uploadDir, filename), buffer);
+            paperPath = `/uploads/${filename}`;
+        } catch (e) {
+            console.error("File upload failed:", e);
+        }
+    }
+
+    const vehicleId = parseInt(vehicleIdStr);
+
+    try {
+        await prisma.trip.create({
+            data: {
+                driverId,
+                vehicleId,
+                fromLocation,
+                toLocation,
+                date: new Date(dateStr),
+                materialType,
+                paperImage: paperPath
+            },
+        });
+    } catch (e) {
+        console.error(e);
+        return { message: "Failed to save trip" };
+    }
+
+    if (isAdmin) {
+        revalidatePath("/admin/trips");
+        redirect("/admin/trips");
+    } else {
+        redirect("/driver?tripSaved=true");
+    }
+}

@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  role           String   // "ADMIN" or "DRIVER"
+  phone          String?
+  cnic           String?
+  salary         String?
+  trips          Trip[]
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Vehicle {
+  id        Int      @id @default(autoincrement())
+  number    String   @unique
+  type      String
+  model     String
+  capacity  String
+  status    String   // "Active", "Inactive"
+  ownership String   @default("RVT") // "RVT" or "Taxi"
+  ownerName String?  // Required if ownership is "Taxi"
+  trips     Trip[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trip {
+  id           Int      @id @default(autoincrement())
+  fromLocation String
+  toLocation   String
+  date         DateTime
+  driverId     Int
+  driver       User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicleId    Int
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  materialType String?
+  paperImage   String?
+  createdAt    DateTime @default(now())
+}

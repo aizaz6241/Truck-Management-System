@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { useEffect, useState } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend } from "recharts";
 import Link from "next/link";
+import { getPieStats, FilterType } from "@/actions/analytics";
 
 export default function DashboardCharts({
     trend7Days,
@@ -17,40 +18,176 @@ export default function DashboardCharts({
 }) {
     const [trendRange, setTrendRange] = useState<"7d" | "30d" | "1y">("7d");
 
+    // Pie Chart State
+    const [pieFilter, setPieFilter] = useState<FilterType>("today");
+    const [customDate, setCustomDate] = useState(""); // For date, month, year inputs
+    const [pieStats, setPieStats] = useState({
+        rvt: todayTrips.filter(t => t.vehicle.ownership === "RVT").length,
+        taxi: todayTrips.filter(t => t.vehicle.ownership === "Taxi").length,
+        total: todayTrips.length
+    });
+    const [loadingPie, setLoadingPie] = useState(false);
+
     let data = trend7Days;
     if (trendRange === "30d") data = trend30Days;
     if (trendRange === "1y") data = trend1Year;
+
+    useEffect(() => {
+        async function fetchPieData() {
+            setLoadingPie(true);
+            try {
+                if ((pieFilter === 'date' || pieFilter === 'month' || pieFilter === 'year') && !customDate) {
+                    setLoadingPie(false);
+                    return;
+                }
+
+                const stats = await getPieStats(pieFilter, customDate);
+                setPieStats(stats);
+            } catch (error) {
+                console.error("Failed to fetch pie stats", error);
+            } finally {
+                setLoadingPie(false);
+            }
+        }
+
+        fetchPieData();
+    }, [pieFilter, customDate]);
+
+    const pieData = [
+        { name: 'RVT', value: pieStats.rvt },
+        { name: 'Taxi', value: pieStats.taxi },
+    ];
+
+    const COLORS = ['var(--secondary-color)', '#e67e22'];
 
     return (
         <div style={{ marginTop: "2rem" }}>
             {/* Today's Trips Section */}
             <div className="card" style={{ marginBottom: "2rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                    <h3 style={{ margin: 0 }}>Today's Trips ({todayTrips.length})</h3>
-                    <Link href="/admin/trips?date=" className="btn" style={{ fontSize: "0.875rem", padding: "0.25rem 0.5rem" }}>View All</Link>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "1rem" }}>
+                    <h3 style={{ margin: 0 }}>
+                        {pieFilter === 'today' ? "Today's Trips" : "Trips Distribution"} ({pieStats.total})
+                    </h3>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <select
+                            value={pieFilter}
+                            onChange={(e) => {
+                                setPieFilter(e.target.value as FilterType);
+                                setCustomDate("");
+                            }}
+                            className="form-select"
+                            style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem", width: "auto" }}
+                        >
+                            <option value="today">Today</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="6m">Last 6 Months</option>
+                            <option value="1y">Last 1 Year</option>
+                            <option value="date">Specific Date</option>
+                            <option value="month">Specific Month</option>
+                            <option value="year">Specific Year</option>
+                        </select>
+
+                        {pieFilter === 'date' && (
+                            <input
+                                type="date"
+                                value={customDate}
+                                onChange={(e) => setCustomDate(e.target.value)}
+                                className="form-input"
+                                style={{ padding: "0.25rem", width: "auto", fontSize: "0.875rem" }}
+                            />
+                        )}
+                        {pieFilter === 'month' && (
+                            <input
+                                type="month"
+                                value={customDate}
+                                onChange={(e) => setCustomDate(e.target.value)}
+                                className="form-input"
+                                style={{ padding: "0.25rem", width: "auto", fontSize: "0.875rem" }}
+                            />
+                        )}
+                        {pieFilter === 'year' && (
+                            <input
+                                type="number"
+                                placeholder="Year"
+                                value={customDate}
+                                onChange={(e) => setCustomDate(e.target.value)}
+                                className="form-input"
+                                style={{ padding: "0.25rem", width: "100px", fontSize: "0.875rem" }}
+                            />
+                        )}
+
+                        {pieFilter === 'today' && (
+                            <Link href="/admin/trips?date=" className="btn" style={{ fontSize: "0.875rem", padding: "0.25rem 0.5rem" }}>View All</Link>
+                        )}
+                    </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
-                    <div style={{ textAlign: "center", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
-                        <h4 style={{ margin: "0 0 0.5rem 0", color: "#666" }}>Total Trips</h4>
-                        <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "var(--primary-color)" }}>{todayTrips.length}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "center" }}>
+                    {/* Left Column: Stats Cards */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
+                            <h4 style={{ margin: 0, color: "#666" }}>Total Trips</h4>
+                            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "var(--primary-color)" }}>{loadingPie ? "..." : pieStats.total}</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
+                            <h4 style={{ margin: 0, color: "#666" }}>RVT Trips</h4>
+                            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "var(--secondary-color)" }}>{loadingPie ? "..." : pieStats.rvt}</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
+                            <h4 style={{ margin: 0, color: "#666" }}>Taxi Trips</h4>
+                            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "#e67e22" }}>{loadingPie ? "..." : pieStats.taxi}</p>
+                        </div>
                     </div>
-                    <div style={{ textAlign: "center", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
-                        <h4 style={{ margin: "0 0 0.5rem 0", color: "#666" }}>RVT Trips</h4>
-                        <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "var(--secondary-color)" }}>
-                            {todayTrips.filter(t => t.vehicle.ownership === "RVT").length}
-                        </p>
-                    </div>
-                    <div style={{ textAlign: "center", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
-                        <h4 style={{ margin: "0 0 0.5rem 0", color: "#666" }}>Taxi Trips</h4>
-                        <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "#e67e22" }}>
-                            {todayTrips.filter(t => t.vehicle.ownership === "Taxi").length}
-                        </p>
+
+                    {/* Right Column: Pie Chart */}
+                    <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        {todayTrips.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                                            const RADIAN = Math.PI / 180;
+                                            // Place label outside the chart
+                                            const radius = outerRadius + 20;
+                                            const angle = midAngle || 0;
+                                            const x = cx + radius * Math.cos(-angle * RADIAN);
+                                            const y = cy + radius * Math.sin(-angle * RADIAN);
+                                            const p = percent || 0;
+                                            return p > 0 ? (
+                                                <text x={x} y={y} fill="black" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" style={{ fontSize: '12px', fontWeight: 'bold' }}>
+                                                    {`${(p * 100).toFixed(0)}%`}
+                                                </text>
+                                            ) : null;
+                                        }}
+                                        labelLine={false}
+                                    >
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div style={{ color: "#999", fontStyle: "italic" }}>No trips today</div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Trends Section */}
+            {/* Trends Section - Unchanged */}
             <div className="card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
                     <h3 style={{ margin: 0 }}>Trips Trend</h3>

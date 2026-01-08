@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface LoadingContextType {
@@ -21,12 +21,11 @@ export const useLoading = () => useContext(LoadingContext);
 export function LoadingProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
     const pathname = usePathname();
-    const searchParams = useSearchParams();
 
     useEffect(() => {
         // Stop loading whenever the route changes
         setIsLoading(false);
-    }, [pathname, searchParams]);
+    }, [pathname]);
 
     const startLoading = () => setIsLoading(true);
     const stopLoading = () => setIsLoading(false);

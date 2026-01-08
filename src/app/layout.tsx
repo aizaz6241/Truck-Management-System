@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { LoadingProvider } from "@/components/LoadingProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-english" });
 // Check if Noto Nastaliq Urdu is available, otherwise allow fallback. 
@@ -24,11 +25,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+
   return (
     <html lang="en">
       <body className={`${inter.variable} ${urduFont.variable}`} suppressHydrationWarning>
         <LanguageProvider>
-          {children}
+          <LoadingProvider>
+            {children}
+          </LoadingProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useRouter } from "next/navigation";
 
+import { useLoading } from "@/components/LoadingProvider";
+
 export default function DriverNav() {
     const { t, toggleLanguage } = useLanguage();
     const router = useRouter();
+    const { startLoading } = useLoading();
 
     const handleLogout = async () => {
         await fetch("/api/auth/logout", { method: "POST" });

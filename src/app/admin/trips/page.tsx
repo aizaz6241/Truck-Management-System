@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import DeleteTripButton from "@/components/DeleteTripButton";
 import ViewPaperButton from "@/components/ViewPaperButton";
+import TripFilters from "@/components/TripFilters";
 import { Fragment } from "react";
 
 export default async function TripsPage(props: {
@@ -89,59 +90,8 @@ export default async function TripsPage(props: {
                 </Link>
             </div>
 
-            {/* Filter Form */}
-            <form className="card filter-bar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", margin: "1.5rem 0", padding: "1rem" }}>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Driver</label>
-                    <select name="driverId" defaultValue={searchParams.driverId} className="form-select">
-                        <option value="">All Drivers</option>
-                        {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Vehicle</label>
-                    <select name="vehicleId" defaultValue={searchParams.vehicleId} className="form-select">
-                        <option value="">All Vehicles</option>
-                        {vehicles.map(v => <option key={v.id} value={v.id}>{v.number}</option>)}
-                    </select>
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Ownership</label>
-                    <select name="ownership" defaultValue={searchParams.ownership} className="form-select">
-                        <option value="">All Types</option>
-                        <option value="RVT">RVT</option>
-                        <option value="Taxi">Taxi</option>
-                    </select>
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Material</label>
-                    <input name="materialType" defaultValue={searchParams.materialType} className="form-input" placeholder="e.g. Concrete" />
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Year</label>
-                    <select name="year" defaultValue={searchParams.year} className="form-select">
-                        <option value="">All Years</option>
-                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i + 1).map(y => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Month</label>
-                    <select name="month" defaultValue={searchParams.month} className="form-select">
-                        <option value="">All Months</option>
-                        {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
-                            <option key={m} value={i + 1}>{m}</option>
-                        ))}
-                    </select>
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Specific Date</label>
-                    <input type="date" name="date" defaultValue={searchParams.date} className="form-input" />
-                </div>
-                <button type="submit" className="btn btn-primary">Filter</button>
-                <Link href="/admin/trips" className="btn" style={{ backgroundColor: "#ccc" }}>Reset</Link>
-            </form>
+            {/* Filter Component */}
+            <TripFilters drivers={drivers} vehicles={vehicles} searchParams={searchParams} />
 
             <div className="table-responsive">
                 <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "var(--surface-color)", border: "1px solid var(--border-color)", minWidth: "900px" }}>

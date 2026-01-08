@@ -123,9 +123,9 @@ export default function DashboardCharts({
                     </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "center" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "2rem", alignItems: "center" }}>
                     {/* Left Column: Stats Cards */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", flex: "1 1 300px", width: "100%" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
                             <h4 style={{ margin: 0, color: "#666" }}>Total Trips</h4>
                             <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "var(--primary-color)" }}>{loadingPie ? "..." : pieStats.total}</p>
@@ -141,7 +141,7 @@ export default function DashboardCharts({
                     </div>
 
                     {/* Right Column: Pie Chart */}
-                    <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ height: "250px", flex: "1 1 300px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
                         {todayTrips.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>

@@ -37,7 +37,7 @@ export default function ViewPaperButton({ imageUrl }: { imageUrl: string }) {
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
-                        zIndex: 1000
+                        zIndex: 99999
                     }}
                     onClick={() => setIsOpen(false)}
                 >

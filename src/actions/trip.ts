@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
+import { logActivity } from "@/lib/logger";
 
 export async function deleteTrip(id: number) {
     const session = await getSession();
@@ -35,6 +36,16 @@ export async function deleteTrip(id: number) {
         }
 
         await prisma.trip.delete({ where: { id } });
+
+        await logActivity({
+            action: "DELETE",
+            entity: "TRIP",
+            entityId: id,
+            details: `Deleted trip from ${trip?.fromLocation} to ${trip?.toLocation}`,
+            actorId: session.user.id,
+            actorName: session.user.name || "Unknown",
+            actorRole: session.user.role,
+        });
     } catch (e) {
         return { message: "Failed to delete trip" };
     }
@@ -108,6 +119,29 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
                 ...(paperPath ? { paperImage: paperPath } : {})
             }
         });
+
+        const changes: string[] = [];
+        if (tripToCheck.fromLocation !== fromLocation) changes.push(`From: '${tripToCheck.fromLocation}' -> '${fromLocation}'`);
+        if (tripToCheck.toLocation !== toLocation) changes.push(`To: '${tripToCheck.toLocation}' -> '${toLocation}'`);
+        if (tripToCheck.materialType !== materialType) changes.push(`Material: '${tripToCheck.materialType || 'None'}' -> '${materialType || 'None'}'`);
+        if (tripToCheck.vehicleId !== parseInt(vehicleIdStr)) changes.push(`Vehicle ID: ${tripToCheck.vehicleId} -> ${vehicleIdStr}`);
+        if (tripToCheck.driverId !== driverId) changes.push(`Driver ID: ${tripToCheck.driverId} -> ${driverId}`);
+        // Date comparison (simplified)
+        if (tripToCheck.date.toISOString() !== combinedDateTime.toISOString()) {
+            changes.push(`Date: ${tripToCheck.date.toLocaleString()} -> ${combinedDateTime.toLocaleString()}`);
+        }
+
+        const details = changes.length > 0 ? `Updated Trip: ${changes.join(", ")}` : "Updated trip details (no significant changes detected)";
+
+        await logActivity({
+            action: "UPDATE",
+            entity: "TRIP",
+            entityId: id,
+            details,
+            actorId: session.user.id,
+            actorName: session.user.name || "Unknown",
+            actorRole: session.user.role,
+        });
     } catch (e) {
         return { message: "Failed to update trip" };
     }
@@ -178,7 +212,7 @@ export async function createTrip(prevState: any, formData: FormData) {
     const vehicleId = parseInt(vehicleIdStr);
 
     try {
-        await prisma.trip.create({
+        const trip = await prisma.trip.create({
             data: {
                 driverId,
                 vehicleId,
@@ -188,6 +222,16 @@ export async function createTrip(prevState: any, formData: FormData) {
                 materialType,
                 paperImage: paperPath
             },
+        });
+
+        await logActivity({
+            action: "CREATE",
+            entity: "TRIP",
+            entityId: trip.id,
+            details: `Created new trip (From: ${fromLocation}, To: ${toLocation})`,
+            actorId: session.user.id,
+            actorName: session.user.name || "Unknown",
+            actorRole: session.user.role,
         });
     } catch (e) {
         console.error(e);

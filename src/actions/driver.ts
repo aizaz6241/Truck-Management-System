@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { getSession } from "@/lib/auth";
+import { logActivity } from "@/lib/logger";
 
 export async function createDriver(prevState: any, formData: FormData) {
     const name = formData.get("name") as string;
@@ -26,7 +28,7 @@ export async function createDriver(prevState: any, formData: FormData) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
-        await prisma.user.create({
+        const driver = await prisma.user.create({
             data: {
                 name,
                 email,
@@ -37,6 +39,19 @@ export async function createDriver(prevState: any, formData: FormData) {
                 salary
             },
         });
+
+        const session = await getSession();
+        if (session?.user) {
+            await logActivity({
+                action: "CREATE",
+                entity: "DRIVER",
+                entityId: driver.id,
+                details: `Created driver ${name} (${email})`,
+                actorId: session.user.id,
+                actorName: session.user.name || "Unknown",
+                actorRole: session.user.role,
+            });
+        }
     } catch (e) {
         console.error(e);
         return { message: "Failed to create driver" };
@@ -66,6 +81,19 @@ export async function updateDriver(id: number, prevState: any, formData: FormDat
                 isActive
             }
         });
+
+        const session = await getSession();
+        if (session?.user) {
+            await logActivity({
+                action: "UPDATE",
+                entity: "DRIVER",
+                entityId: id,
+                details: `Updated driver ${name}`,
+                actorId: session.user.id,
+                actorName: session.user.name || "Unknown",
+                actorRole: session.user.role,
+            });
+        }
     } catch (e) {
         return { message: "Failed to update driver" };
     }
@@ -76,7 +104,21 @@ export async function updateDriver(id: number, prevState: any, formData: FormDat
 
 export async function deleteDriver(id: number) {
     try {
+        const driver = await prisma.user.findUnique({ where: { id } });
         await prisma.user.delete({ where: { id } });
+
+        const session = await getSession();
+        if (session?.user) {
+            await logActivity({
+                action: "DELETE",
+                entity: "DRIVER",
+                entityId: id,
+                details: `Deleted driver ${driver?.name}`,
+                actorId: session.user.id,
+                actorName: session.user.name || "Unknown",
+                actorRole: session.user.role,
+            });
+        }
     } catch (e) {
         console.error("Failed to delete driver:", e);
     }

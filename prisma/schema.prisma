@@ -52,3 +52,15 @@ model Trip {
   paperImage   String?
   createdAt    DateTime @default(now())
 }
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  action      String   // "CREATE", "UPDATE", "DELETE"
+  entity      String   // "TRIP", "VEHICLE", "DRIVER", "USER"
+  entityId    String?  // ID of the affected entity (can be string or int converted to string)
+  details     String?  // JSON string or description of what changed
+  actorId     Int      // User ID of who performed the action
+  actorName   String   // Snapshot of the user's name
+  actorRole   String   // "ADMIN" or "DRIVER"
+  date        DateTime @default(now())
+}

@@ -147,6 +147,7 @@ export default async function TripsPage(props: {
                 <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "var(--surface-color)", border: "1px solid var(--border-color)", minWidth: "900px" }}>
                     <thead>
                         <tr style={{ backgroundColor: "var(--background-color)", textAlign: "left" }}>
+                            <th style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>ID</th>
                             <th style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>Date</th>
                             <th style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>Driver</th>
                             <th style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>Vehicle</th>
@@ -161,10 +162,11 @@ export default async function TripsPage(props: {
                         {Object.entries(groupedTrips).map(([dateKey, groupTrips]) => (
                             <Fragment key={dateKey}>
                                 <tr style={{ backgroundColor: "#e9ecef" }}>
-                                    <td colSpan={8} style={{ padding: "0.5rem 1rem", fontWeight: "bold" }}>{dateKey}</td>
+                                    <td colSpan={9} style={{ padding: "0.5rem 1rem", fontWeight: "bold" }}>{dateKey}</td>
                                 </tr>
                                 {groupTrips.map(trip => (
                                     <tr key={trip.id}>
+                                        <td style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)", fontSize: "0.75rem", fontFamily: "monospace", color: "#6b7280" }}>#{trip.id}</td>
                                         {/* Format time separately if DateTime has time, otherwise just standard date */}
                                         <td style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>
                                             {new Date(trip.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -192,8 +194,10 @@ export default async function TripsPage(props: {
                                             ) : "-"}
                                         </td>
                                         <td style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>
-                                            <Link href={`/admin/trips/${trip.id}/edit`} style={{ marginRight: "0.5rem", color: "var(--primary-color)" }}>Edit</Link>
-                                            <DeleteTripButton id={trip.id} />
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Link href={`/admin/trips/${trip.id}/edit`} style={{ color: "var(--primary-color)" }}>Edit</Link>
+                                                <DeleteTripButton id={trip.id} />
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -201,7 +205,7 @@ export default async function TripsPage(props: {
                         ))}
                         {trips.length === 0 && (
                             <tr>
-                                <td colSpan={8} style={{ padding: "1rem", textAlign: "center" }}>No trips found.</td>
+                                <td colSpan={9} style={{ padding: "1rem", textAlign: "center" }}>No trips found.</td>
                             </tr>
                         )}
                     </tbody>

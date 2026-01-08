@@ -165,3 +165,243 @@ button {
     font-size: 1.75rem;
   }
 }
+
+/* Logs Page Styles */
+.log-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.log-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.log-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  align-items: center;
+}
+
+.log-filter-divider {
+  width: 1px;
+  height: 1.5rem;
+  background-color: #d1d5db;
+  margin: 0 0.5rem;
+}
+
+.log-filter-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.log-filter-btn.active {
+  background-color: #111827;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.log-filter-btn.inactive {
+  background-color: white;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
+
+.log-filter-btn.inactive:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.log-group {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.log-group-header {
+  background-color: #f9fafb;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.log-group-date {
+  font-weight: 600;
+  color: #374151;
+}
+
+.log-group-count {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  background-color: #e5e7eb;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.log-table-wrapper {
+  overflow-x: auto;
+}
+
+.log-table {
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #4b5563;
+  border-collapse: collapse;
+}
+
+.log-table th {
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.log-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.log-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.log-table tr:last-child td {
+  border-bottom: none;
+}
+
+.log-time {
+  color: #6b7280;
+  font-family: monospace;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.log-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.badge-create {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-update {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-delete {
+  background-color: #ffe4e6;
+  color: #9f1239;
+  border: 1px solid #fecdd3;
+}
+
+.badge-default {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+.log-details-text {
+  color: #111827;
+  font-weight: 500;
+  margin-bottom: 0.125rem;
+}
+
+.log-details-meta {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.log-user {
+  display: flex;
+  align-items: center;
+}
+
+.log-user-avatar {
+  height: 2rem;
+  width: 2rem;
+  border-radius: 9999px;
+  background-color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #4b5563;
+  margin-right: 0.75rem;
+}
+
+.log-user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.log-user-role {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.log-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  border: 2px dashed #e5e7eb;
+  color: #6b7280;
+}
+
+.log-empty-icon {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 1rem;
+  color: #9ca3af;
+}
+
+.log-empty-link {
+  color: #2563eb;
+  font-weight: 500;
+  margin-top: 1rem;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.log-empty-link:hover {
+  text-decoration: underline;
+}

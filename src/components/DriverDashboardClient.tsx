@@ -74,7 +74,7 @@ export default function DriverDashboardClient({
                 </div>
 
                 {/* Filters */}
-                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "end" }}>
+                <div className="filter-bar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "end" }}>
                     <div style={{ flex: 1, minWidth: "150px" }}>
                         <label className="form-label" style={{ marginBottom: "0.25rem" }}>{t("trip.vehicle")}</label>
                         <select className="form-select" value={filterVehicle} onChange={e => setFilterVehicle(e.target.value)}>
@@ -96,8 +96,8 @@ export default function DriverDashboardClient({
                     <button className="btn" style={{ background: "#ccc" }} onClick={clearFilters}>Reset</button>
                 </div>
 
-                <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid var(--border-color)" }}>
+                <div className="table-responsive">
+                    <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid var(--border-color)", minWidth: "600px" }}>
                         <thead>
                             <tr style={{ backgroundColor: "var(--background-color)", textAlign: "left" }}>
                                 <th style={{ padding: "0.75rem", borderBottom: "1px solid var(--border-color)" }}>{t("trip.date")}</th>

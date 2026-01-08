@@ -16,11 +16,11 @@ export default function DriverNav() {
 
     return (
         <nav style={{ backgroundColor: "var(--surface-color)", borderBottom: "1px solid var(--border-color)", padding: "1rem", marginBottom: "2rem" }}>
-            <div className="container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="container nav-container">
                 <div style={{ fontWeight: "bold", fontSize: "1.2rem", color: "var(--primary-color)" }}>
                     {t("app.title")} - {t("driver.dashboard")}
                 </div>
-                <div style={{ display: "flex", gap: "1rem" }}>
+                <div className="nav-links">
                     <button
                         onClick={toggleLanguage}
                         style={{

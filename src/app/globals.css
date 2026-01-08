@@ -11,7 +11,7 @@
   --danger-color: #dc3545;
   --font-english: "Inter", sans-serif;
   /* Basic Urdu font fallback, can import Noto Nastaliq Urdu if needed via Google Fonts */
-  --font-urdu: "Arial", sans-serif; 
+  --font-urdu: "Arial", sans-serif;
 }
 
 * {
@@ -33,7 +33,7 @@ body {
 }
 
 .font-urdu {
-  font-family: "Noto Nastaliq Urdu", var(--font-urdu); 
+  font-family: "Noto Nastaliq Urdu", var(--font-urdu);
   /* Assuming we might import it in layout */
 }
 
@@ -75,7 +75,7 @@ button {
 .card {
   background-color: var(--surface-color);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
   border: 1px solid var(--border-color);
 }
@@ -92,7 +92,8 @@ button {
   color: var(--text-secondary);
 }
 
-.form-input, .form-select {
+.form-input,
+.form-select {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid var(--border-color);
@@ -100,8 +101,67 @@ button {
   font-size: 1rem;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input:focus,
+.form-select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(0,86,179,0.1);
+  box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.1);
+}
+
+/* Responsive Utilities */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* smooth scrolling on iOS */
+  margin-bottom: 1rem;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Stack form groups containing flex items (like filter bars) */
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .filter-bar>div {
+    min-width: 100% !important;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
 }

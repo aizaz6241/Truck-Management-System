@@ -11,7 +11,10 @@ export default async function TripsPage(props: {
         date?: string,
         materialType?: string,
         ownership?: string,
-        page?: string
+
+        page?: string,
+        month?: string,
+        year?: string
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -20,6 +23,8 @@ export default async function TripsPage(props: {
     const date = searchParams.date;
     const materialType = searchParams.materialType;
     const ownership = searchParams.ownership;
+    const month = searchParams.month ? parseInt(searchParams.month) : undefined;
+    const year = searchParams.year ? parseInt(searchParams.year) : undefined;
     const page = searchParams.page ? parseInt(searchParams.page) : 1;
     const pageSize = 100;
 
@@ -28,14 +33,29 @@ export default async function TripsPage(props: {
     if (vehicleId) where.vehicleId = vehicleId;
     if (materialType) where.materialType = { contains: materialType }; // Partial match
     if (ownership) where.vehicle = { ownership: ownership };
+
+    // Date Filtering Logic
     if (date) {
+        // Specific date takes precedence
         const start = new Date(date);
         const end = new Date(date);
         end.setDate(end.getDate() + 1);
-        where.date = {
-            gte: start,
-            lt: end
-        };
+        where.date = { gte: start, lt: end };
+    } else if (year) {
+        if (month) {
+            // Specific Month and Year
+            const start = new Date(year, month - 1, 1);
+            const end = new Date(year, month, 0);
+            // end needs to be start of next month to be exclusive or handle time correctly.
+            // Using month index + 1 ensures we get the first moment of next month
+            const nextMonth = new Date(year, month, 1);
+            where.date = { gte: start, lt: nextMonth };
+        } else {
+            // Whole Year
+            const start = new Date(year, 0, 1);
+            const end = new Date(year + 1, 0, 1);
+            where.date = { gte: start, lt: end };
+        }
     }
 
     const totalTrips = await prisma.trip.count({ where });
@@ -70,7 +90,7 @@ export default async function TripsPage(props: {
             </div>
 
             {/* Filter Form */}
-            <form className="card" style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", margin: "1.5rem 0", padding: "1rem" }}>
+            <form className="card filter-bar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", margin: "1.5rem 0", padding: "1rem" }}>
                 <div style={{ flex: 1, minWidth: "150px" }}>
                     <label className="form-label">Driver</label>
                     <select name="driverId" defaultValue={searchParams.driverId} className="form-select">
@@ -98,15 +118,33 @@ export default async function TripsPage(props: {
                     <input name="materialType" defaultValue={searchParams.materialType} className="form-input" placeholder="e.g. Concrete" />
                 </div>
                 <div style={{ flex: 1, minWidth: "150px" }}>
-                    <label className="form-label">Date</label>
+                    <label className="form-label">Year</label>
+                    <select name="year" defaultValue={searchParams.year} className="form-select">
+                        <option value="">All Years</option>
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i + 1).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                    <label className="form-label">Month</label>
+                    <select name="month" defaultValue={searchParams.month} className="form-select">
+                        <option value="">All Months</option>
+                        {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                            <option key={m} value={i + 1}>{m}</option>
+                        ))}
+                    </select>
+                </div>
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                    <label className="form-label">Specific Date</label>
                     <input type="date" name="date" defaultValue={searchParams.date} className="form-input" />
                 </div>
                 <button type="submit" className="btn btn-primary">Filter</button>
                 <Link href="/admin/trips" className="btn" style={{ backgroundColor: "#ccc" }}>Reset</Link>
             </form>
 
-            <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "var(--surface-color)", border: "1px solid var(--border-color)" }}>
+            <div className="table-responsive">
+                <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "var(--surface-color)", border: "1px solid var(--border-color)", minWidth: "900px" }}>
                     <thead>
                         <tr style={{ backgroundColor: "var(--background-color)", textAlign: "left" }}>
                             <th style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>Date</th>
@@ -173,12 +211,12 @@ export default async function TripsPage(props: {
             {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "2rem", flexWrap: "wrap" }}>
-                    <Link href={`/admin/trips?page=1&driverId=${driverId || ''}&vehicleId=${vehicleId || ''}&date=${date || ''}&materialType=${materialType || ''}&ownership=${ownership || ''}`}
+                    <Link href={`/admin/trips?page=1&driverId=${driverId || ''}&vehicleId=${vehicleId || ''}&date=${date || ''}&year=${year || ''}&month=${month || ''}&materialType=${materialType || ''}&ownership=${ownership || ''}`}
                         className={`btn ${page <= 1 ? "disabled" : ""}`}
                         style={{ pointerEvents: page <= 1 ? 'none' : 'auto', opacity: page <= 1 ? 0.5 : 1 }}>
                         First
                     </Link>
-                    <Link href={`/admin/trips?page=${page - 1}&driverId=${driverId || ''}&vehicleId=${vehicleId || ''}&date=${date || ''}&materialType=${materialType || ''}&ownership=${ownership || ''}`}
+                    <Link href={`/admin/trips?page=${page - 1}&driverId=${driverId || ''}&vehicleId=${vehicleId || ''}&date=${date || ''}&year=${year || ''}&month=${month || ''}&materialType=${materialType || ''}&ownership=${ownership || ''}`}
                         className={`btn ${page <= 1 ? "disabled" : ""}`}
                         style={{ pointerEvents: page <= 1 ? 'none' : 'auto', opacity: page <= 1 ? 0.5 : 1 }}>
                         Prev
@@ -189,7 +227,7 @@ export default async function TripsPage(props: {
                         Page {page} of {totalPages}
                     </span>
 
-                    <Link href={`/admin/trips?page=${page + 1}&driverId=${driverId || ''}&vehicleId=${vehicleId || ''}&date=${date || ''}&materialType=${materialType || ''}&ownership=${ownership || ''}`}
+                    <Link href={`/admin/trips?page=${page + 1}&driverId=${driverId || ''}&vehicleId=${vehicleId || ''}&date=${date || ''}&year=${year || ''}&month=${month || ''}&materialType=${materialType || ''}&ownership=${ownership || ''}`}
                         className={`btn ${page >= totalPages ? "disabled" : ""}`}
                         style={{ pointerEvents: page >= totalPages ? 'none' : 'auto', opacity: page >= totalPages ? 0.5 : 1 }}>
                         Next

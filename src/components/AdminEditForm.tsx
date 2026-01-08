@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { updateAdmin } from "@/actions/admin";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function AdminEditForm({ admin }: { admin: any }) {
     const updateAdminWithId = updateAdmin.bind(null, admin.id);
@@ -81,6 +82,8 @@ export default function AdminEditForm({ admin }: { admin: any }) {
             </div>
 
             <div style={{ paddingTop: '0.5rem' }}>
+
+
                 <button
                     type="submit"
                     disabled={isPending}
@@ -92,10 +95,11 @@ export default function AdminEditForm({ admin }: { admin: any }) {
                         borderRadius: '0.375rem',
                         border: 'none',
                         cursor: isPending ? 'not-allowed' : 'pointer',
-                        opacity: isPending ? 0.7 : 1
+                        opacity: isPending ? 0.7 : 1,
+                        display: "flex", alignItems: "center", gap: "0.5rem"
                     }}
                 >
-                    {isPending ? "Updating..." : "Update Admin"}
+                    {isPending ? <><LoadingSpinner size={16} /> Updating...</> : "Update Admin"}
                 </button>
             </div>
         </form>

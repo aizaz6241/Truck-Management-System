@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -74,8 +75,8 @@ export default function LoginPage() {
                             required
                         />
                     </div>
-                    <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={isLoading}>
-                        {isLoading ? "..." : t("login.button")}
+                    <button type="submit" className="btn btn-primary" style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }} disabled={isLoading}>
+                        {isLoading ? <><LoadingSpinner size={16} /> Signing in...</> : t("login.button")}
                     </button>
                 </form>
             </div>

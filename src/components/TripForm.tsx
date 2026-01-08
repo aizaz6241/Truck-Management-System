@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createTrip, updateTrip } from "@/actions/trip";
 import { useLanguage } from "@/components/LanguageProvider";
 import { UploadButton } from "@/utils/uploadthing";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function TripForm({ driverName, vehicles, initialData }: { driverName: string, vehicles: any[], initialData?: any }) {
     const updateTripWithId = initialData ? updateTrip.bind(null, initialData.id) : null;
@@ -104,8 +105,13 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
             </div>
 
             <div style={{ marginTop: "1.5rem" }}>
-                <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
-                    {initialData ? "Update Trip" : t("common.submit")}
+                <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}
+                    disabled={isPending}
+                >
+                    {isPending ? <><LoadingSpinner size={16} /> Processing...</> : (initialData ? "Update Trip" : t("common.submit"))}
                 </button>
             </div>
         </form>

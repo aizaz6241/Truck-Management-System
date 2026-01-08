@@ -68,18 +68,25 @@ export async function updateDriver(id: number, prevState: any, formData: FormDat
     const salary = formData.get("salary") as string;
     const status = formData.get("status") as string; // Active/Inactive
 
+    const password = formData.get("password") as string;
     const isActive = status === "Active";
+
+    const updateData: any = {
+        name,
+        phone,
+        cnic,
+        salary,
+        isActive
+    };
+
+    if (password && password.trim() !== "") {
+        updateData.password = await bcrypt.hash(password, 10);
+    }
 
     try {
         await prisma.user.update({
             where: { id },
-            data: {
-                name,
-                phone,
-                cnic,
-                salary,
-                isActive
-            }
+            data: updateData
         });
 
         const session = await getSession();

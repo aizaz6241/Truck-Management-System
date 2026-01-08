@@ -31,6 +31,7 @@ export default function AdminNav() {
                     <Link href="/admin/drivers">{t("nav.drivers")}</Link>
                     <Link href="/admin/trips">{t("nav.trips")}</Link>
                     <Link href="/admin/logs">Logs</Link>
+                    <Link href="/admin/settings">Settings</Link>
                     <button onClick={handleLogout} style={{ background: "none", border: "none", color: "var(--danger-color)", fontSize: "1rem" }}>
                         {t("nav.logout")}
                     </button>

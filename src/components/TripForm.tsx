@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { createTrip, updateTrip } from "@/actions/trip";
 import { useLanguage } from "@/components/LanguageProvider";
+import { UploadButton } from "@/utils/uploadthing";
 
 export default function TripForm({ driverName, vehicles, initialData }: { driverName: string, vehicles: any[], initialData?: any }) {
     const updateTripWithId = initialData ? updateTrip.bind(null, initialData.id) : null;
@@ -11,16 +12,13 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
     // @ts-ignore
     const [state, formAction, isPending] = useActionState(action, { message: "" });
     const { t } = useLanguage();
-    const [fileName, setFileName] = useState<string>(initialData?.paperImage ? "Existing file attached" : "");
+
+    // State for Cloud Upload
+    const [uploadedUrl, setUploadedUrl] = useState<string>(initialData?.paperImage || "");
+    const [uploadError, setUploadError] = useState("");
 
     const defaultDate = initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
     const defaultTime = initialData?.date ? new Date(initialData.date).toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            setFileName(e.target.files[0].name);
-        }
-    };
 
     return (
         <form action={formAction} className="card" style={{ maxWidth: "500px", margin: "0 auto" }}>
@@ -29,21 +27,6 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
             <div className="form-group">
                 <label className="form-label">{t("trip.driver")}</label>
                 <input className="form-input" value={driverName} disabled style={{ backgroundColor: "#e9ecef" }} />
-                {/* Ensure driverId is sent even if disabled input doesn't send it? Actually createTrip gets ID from session. updateTrip gets it from form. */}
-                {/* For update, we need to send driverId if the action expects it. The action reads driverId from formData. 
-                    If input is disabled, it's not sent. 
-                    However, createTrip uses usage session. updateTrip uses formData.
-                    We should add a hidden input for driverId if editing, or ensure the select below covers it? 
-                    Wait, driverId isn't a select here, it's implied for Driver. 
-                    In Admin form, it's a select.
-                    In TripForm (Driver view), driver name is read-only.
-                    Let's add a hidden input for driverId just in case, or reliance on session for safety?
-                    Actually, updateTrip reads `formData.get("driverId")`.
-                    If we don't send it, updateTrip might fail or zero it out.
-                    But wait, updateTrip was built for Admin (who picks driver).
-                    Drivers shouldn't change the driver (themselves).
-                    We should probably inject the current driver ID via hidden input.
-                */}
                 <input type="hidden" name="driverId" value={initialData?.driverId || ""} />
             </div>
 
@@ -91,51 +74,33 @@ export default function TripForm({ driverName, vehicles, initialData }: { driver
 
             <div className="form-group">
                 <label className="form-label">{t("trip.upload")}</label>
-                <div style={{ display: "flex", gap: "1rem", marginBottom: "0.5rem" }}>
-                    {/* Gallery Button */}
-                    <label className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#6c757d", color: "white" }}>
-                        {t("trip.gallery")}
-                        <input type="file" name="paper" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
-                    </label>
-                    {/* Camera Button */}
-                    <label className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#17a2b8", color: "white" }}>
-                        {t("trip.camera")}
-                        <input type="file" name="paper_camera" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => {
-                            // Copy to main input if needed, or backend handles both. 
-                            // Backend needs to check both names or loop formData.
-                            // Simpler: Just name them same? No, browser might not allow two inputs with same name to submit if one is empty.
-                            // Actually, if we use same name 'paper', formData.getAll('paper') will have both.
-                            // We can use same name 'paper' for both inputs. One will be empty, one will have file.
-                            handleFileChange(e);
-                        }} />
-                        {/* 
-                           Duplicate name issue: If user picks file in one, other is empty. 
-                           FormData will likely send two 'paper' entries. 
-                           Backend logic `paperFile = formData.get('paper')` picks the FIRST one. 
-                           If the first one is empty, it might fail.
-                           Let's use DIFFERENT names and handle in backend.
-                           Backend check: `formData.get('paper')` OR `formData.get('paperCamera')`.
-                           Updated backend already uses 'paper'. I will start with 'paper' for gallery and use 'paper' for camera too? 
-                           No, safer to use 'paper' for gallery and 'paperCamera' for camera and update backend to check both.
-                           Wait, I need to update backend then. 
-                           Updated backend code: `const paperFile = formData.get("paper") as File;`
-                           I'll update it to check both.
-                        */}
-                    </label>
-                </div>
-                {/* Re-implementing with distinct names for safety */}
-                <input type="file" id="paper_gallery" name="paper" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
-                <input type="file" id="paper_camera" name="paperCamera" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
 
-                <div style={{ display: "flex", gap: "1rem" }}>
-                    <label htmlFor="paper_gallery" className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#6c757d", color: "white" }}>
-                        {t("trip.gallery")}
-                    </label>
-                    <label htmlFor="paper_camera" className="btn" style={{ flex: 1, textAlign: "center", cursor: "pointer", backgroundColor: "#17a2b8", color: "white" }}>
-                        {t("trip.camera")}
-                    </label>
+                {/* UploadThing Button */}
+                <div style={{ marginBottom: "1rem" }}>
+                    <UploadButton
+                        endpoint="imageUploader"
+                        onClientUploadComplete={(res: any) => {
+                            if (res && res[0]) {
+                                setUploadedUrl(res[0].url);
+                                alert("Upload Completed");
+                            }
+                        }}
+                        onUploadError={(error: Error) => {
+                            alert(`ERROR! ${error.message}`);
+                            setUploadError(error.message);
+                        }}
+                    />
                 </div>
-                {fileName && <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "green" }}>Selected: {fileName}</div>}
+
+                {uploadedUrl && (
+                    <div style={{ marginTop: "0.5rem" }}>
+                        <p style={{ color: "green", fontSize: "0.9rem" }}>Image Attached Successfully</p>
+                        <a href={uploadedUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8rem", textDecoration: "underline" }}>View Image</a>
+                        {/* Hidden input to send URL to server action */}
+                        <input type="hidden" name="paperUrl" value={uploadedUrl} />
+                    </div>
+                )}
+                {uploadError && <p style={{ color: "red", fontSize: "0.8rem" }}>Upload Failed: {uploadError}</p>}
             </div>
 
             <div style={{ marginTop: "1.5rem" }}>

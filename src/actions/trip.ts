@@ -4,9 +4,6 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
 import { logActivity } from "@/lib/logger";
 
 export async function deleteTrip(id: number) {
@@ -26,14 +23,8 @@ export async function deleteTrip(id: number) {
     }
 
     try {
-        const trip = await prisma.trip.findUnique({ where: { id } });
-        if (trip && trip.paperImage) {
-            // Try to delete the file
-            const filePath = path.join(process.cwd(), "public", trip.paperImage);
-            if (existsSync(filePath)) {
-                await unlink(filePath).catch(e => console.error("Failed to delete file:", e));
-            }
-        }
+        // File deletion from UploadThing (optional/advanced: call UT API to delete)
+        // For now, we just delete the record. Cloud files can remain or be cleaned up by UT retention policy.
 
         await prisma.trip.delete({ where: { id } });
 
@@ -41,7 +32,7 @@ export async function deleteTrip(id: number) {
             action: "DELETE",
             entity: "TRIP",
             entityId: id,
-            details: `Deleted trip from ${trip?.fromLocation} to ${trip?.toLocation}`,
+            details: `Deleted trip from ${tripToCheck.fromLocation} to ${tripToCheck.toLocation}`,
             actorId: session.user.id,
             actorName: session.user.name || "Unknown",
             actorRole: session.user.role,
@@ -77,9 +68,8 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
 
-    // Check for 'paper' file (new upload)
-    const paperFile = formData.get("paper") as File; // Standard upload
-    // Optional: add paperCamera check if needed for update too, though Admin usually uploads from file.
+    // Read URL from hidden input
+    const paperUrl = formData.get("paperUrl") as string;
 
     const driverId = parseInt(formData.get("driverId") as string);
 
@@ -88,22 +78,6 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
 
     if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr || !driverId) {
         return { message: "All fields are required" };
-    }
-
-    let paperPath = undefined;
-    if (paperFile && paperFile.size > 0) {
-        try {
-            const buffer = Buffer.from(await paperFile.arrayBuffer());
-            const filename = `${Date.now()}-${paperFile.name.replace(/\s/g, '_')}`;
-            const uploadDir = path.join(process.cwd(), "public", "uploads");
-            await mkdir(uploadDir, { recursive: true });
-            await writeFile(path.join(uploadDir, filename), buffer);
-            paperPath = `/uploads/${filename}`;
-
-            // Note: Could delete old file here if strict cleanup needed
-        } catch (e) {
-            console.error("File upload failed:", e);
-        }
     }
 
     try {
@@ -116,7 +90,7 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
                 toLocation,
                 date: combinedDateTime,
                 materialType,
-                ...(paperPath ? { paperImage: paperPath } : {})
+                ...(paperUrl ? { paperImage: paperUrl } : {})
             }
         });
 
@@ -125,13 +99,8 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
         if (tripToCheck.toLocation !== toLocation) changes.push(`To: '${tripToCheck.toLocation}' -> '${toLocation}'`);
         if (tripToCheck.materialType !== materialType) changes.push(`Material: '${tripToCheck.materialType || 'None'}' -> '${materialType || 'None'}'`);
         if (tripToCheck.vehicleId !== parseInt(vehicleIdStr)) changes.push(`Vehicle ID: ${tripToCheck.vehicleId} -> ${vehicleIdStr}`);
-        if (tripToCheck.driverId !== driverId) changes.push(`Driver ID: ${tripToCheck.driverId} -> ${driverId}`);
-        // Date comparison (simplified)
-        if (tripToCheck.date.toISOString() !== combinedDateTime.toISOString()) {
-            changes.push(`Date: ${tripToCheck.date.toLocaleString()} -> ${combinedDateTime.toLocaleString()}`);
-        }
 
-        const details = changes.length > 0 ? `Updated Trip: ${changes.join(", ")}` : "Updated trip details (no significant changes detected)";
+        const details = changes.length > 0 ? `Updated Trip: ${changes.join(", ")}` : "Updated trip details";
 
         await logActivity({
             action: "UPDATE",
@@ -175,40 +144,18 @@ export async function createTrip(prevState: any, formData: FormData) {
     const fromLocation = formData.get("fromLocation") as string;
     const toLocation = formData.get("toLocation") as string;
     const dateStr = formData.get("date") as string;
-    const timeStr = formData.get("time") as string; // "HH:MM"
+    const timeStr = formData.get("time") as string;
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
 
-    // Check both standard 'paper' and 'paperCamera'
-    let paperFile = formData.get("paper") as File;
-    if (!paperFile || paperFile.size === 0) {
-        paperFile = formData.get("paperCamera") as File;
-    }
+    // Read URL from hidden input
+    const paperUrl = formData.get("paperUrl") as string;
 
     if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr) {
         return { message: "All fields are required" };
     }
 
-    // Combine Date and Time
     const combinedDateTime = timeStr ? new Date(`${dateStr}T${timeStr}`) : new Date(dateStr);
-
-    let paperPath = null;
-    if (paperFile && paperFile.size > 0) {
-        try {
-            const buffer = Buffer.from(await paperFile.arrayBuffer());
-            const filename = `${Date.now()}-${paperFile.name.replace(/\s/g, '_')}`;
-            const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-            // Ensure directory exists
-            await mkdir(uploadDir, { recursive: true });
-
-            await writeFile(path.join(uploadDir, filename), buffer);
-            paperPath = `/uploads/${filename}`;
-        } catch (e) {
-            console.error("File upload failed:", e);
-        }
-    }
-
     const vehicleId = parseInt(vehicleIdStr);
 
     try {
@@ -220,7 +167,7 @@ export async function createTrip(prevState: any, formData: FormData) {
                 toLocation,
                 date: combinedDateTime,
                 materialType,
-                paperImage: paperPath
+                paperImage: paperUrl || null
             },
         });
 

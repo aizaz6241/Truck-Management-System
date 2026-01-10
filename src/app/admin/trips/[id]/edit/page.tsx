@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import AdminTripForm from "@/components/AdminTripForm";
 
+export const dynamic = 'force-dynamic';
+
 export default async function EditTripPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
     const id = parseInt(params.id);

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getAnalyticsData } from "@/lib/analytics";
 import DashboardCharts from "@/components/DashboardCharts";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboard() {
     const vehicleCount = await prisma.vehicle.count();
     const driverCount = await prisma.user.count({ where: { role: "DRIVER" } });

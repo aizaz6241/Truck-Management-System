@@ -5,14 +5,14 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { LoadingProvider } from "@/components/LoadingProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-english" });
-// Check if Noto Nastaliq Urdu is available, otherwise allow fallback. 
+// Check if Noto Nastaliq Urdu is available, otherwise allow fallback.
 // Using "Arial" as fallback in globals.css, but trying to load google font.
 // Note: Noto_Nastaliq_Urdu might need specific subset or weight.
 const urduFont = Noto_Nastaliq_Urdu({
   subsets: ["arabic"],
   weight: ["400", "700"],
   variable: "--font-urdu",
-  display: "swap"
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,15 +25,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${urduFont.variable}`} suppressHydrationWarning>
+      <body
+        className={`${inter.variable} ${urduFont.variable}`}
+        suppressHydrationWarning
+      >
         <LanguageProvider>
-          <LoadingProvider>
-            {children}
-          </LoadingProvider>
+          <LoadingProvider>{children}</LoadingProvider>
         </LanguageProvider>
       </body>
     </html>

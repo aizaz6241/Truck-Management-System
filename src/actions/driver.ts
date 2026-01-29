@@ -132,3 +132,17 @@ export async function deleteDriver(id: number) {
     revalidatePath("/admin");
     revalidatePath("/admin/drivers");
 }
+
+export async function getDrivers() {
+    try {
+        const drivers = await prisma.user.findMany({
+            where: { role: "DRIVER", isActive: true },
+            select: { id: true, name: true },
+            orderBy: { name: "asc" }
+        });
+        return { success: true, data: drivers };
+    } catch (e) {
+        console.error("Failed to fetch drivers:", e);
+        return { success: false, error: "Failed to fetch drivers" };
+    }
+}

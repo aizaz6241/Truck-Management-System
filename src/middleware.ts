@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { decrypt } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
+    console.log("Middleware request:", request.nextUrl.pathname);
     const session = request.cookies.get("session")?.value;
     const path = request.nextUrl.pathname;
 

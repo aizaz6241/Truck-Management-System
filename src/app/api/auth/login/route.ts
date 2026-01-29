@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { email, password } = body;
+        console.log("Login attempt for:", email);
 
         if (!email || !password) {
             return NextResponse.json(

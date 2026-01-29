@@ -28,9 +28,21 @@ export async function createVehicle(prevState: any, formData: FormData) {
                 capacity,
                 status: status || "Active",
                 ownership: ownership || "RVT",
-                ownerName: ownership === "Taxi" ? ownerName : null
+                ownerName: ownership === "Taxi" ? ownerName : null,
+                registrationExpiry: formData.get("registrationExpiry") ? new Date(formData.get("registrationExpiry") as string) : null
             },
         });
+
+        // Auto-Disable check immediately after create?
+        // Or strictly rely on the input status. 
+        // User Policy: "if the license is expired then the vehicle should be disabled"
+        // Let's enforce it:
+        if (vehicle.registrationExpiry && new Date(vehicle.registrationExpiry) < new Date()) {
+             await prisma.vehicle.update({
+                where: { id: vehicle.id },
+                data: { status: "Inactive" }
+             });
+        }
 
         const session = await getSession();
         if (session?.user) {
@@ -72,9 +84,19 @@ export async function updateVehicle(id: number, prevState: any, formData: FormDa
                 capacity,
                 status,
                 ownership,
-                ownerName: ownership === "Taxi" ? ownerName : null
+                ownerName: ownership === "Taxi" ? ownerName : null,
+                registrationExpiry: formData.get("registrationExpiry") ? new Date(formData.get("registrationExpiry") as string) : null
             }
         });
+
+        // Auto-Disable Logic
+        const expiryDate = formData.get("registrationExpiry") ? new Date(formData.get("registrationExpiry") as string) : null;
+        if (expiryDate && expiryDate < new Date()) {
+             await prisma.vehicle.update({
+                where: { id },
+                data: { status: "Inactive" }
+             });
+        }
 
         const session = await getSession();
         if (session?.user) {
@@ -121,4 +143,17 @@ export async function deleteVehicle(id: number) {
     }
     revalidatePath("/admin");
     revalidatePath("/admin/vehicles");
+}
+
+export async function getAllVehicles() {
+    try {
+        const vehicles = await prisma.vehicle.findMany({
+            where: { status: "Active" },
+            orderBy: { number: "asc" }
+        });
+        return { success: true, data: vehicles };
+    } catch (e) {
+        console.error("Failed to fetch vehicles:", e);
+        return { success: false, error: "Failed to fetch vehicles" };
+    }
 }

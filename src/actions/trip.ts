@@ -23,9 +23,6 @@ export async function deleteTrip(id: number) {
     }
 
     try {
-        // File deletion from UploadThing (optional/advanced: call UT API to delete)
-        // For now, we just delete the record. Cloud files can remain or be cleaned up by UT retention policy.
-
         await prisma.trip.delete({ where: { id } });
 
         await logActivity({
@@ -68,12 +65,8 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
 
-    // Read URL from hidden input
-    const paperUrl = formData.get("paperUrl") as string;
-
+    const paperUrls = formData.getAll("paperUrls") as string[];
     const driverId = parseInt(formData.get("driverId") as string);
-
-    // Combine Date and Time
     const combinedDateTime = timeStr ? new Date(`${dateStr}T${timeStr}`) : new Date(dateStr);
 
     if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr || !driverId) {
@@ -81,6 +74,8 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
     }
 
     try {
+         await prisma.tripImage.deleteMany({ where: { tripId: id } });
+
         await prisma.trip.update({
             where: { id },
             data: {
@@ -90,7 +85,10 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
                 toLocation,
                 date: combinedDateTime,
                 materialType,
-                ...(paperUrl ? { paperImage: paperUrl } : {})
+                paperImage: paperUrls[0] || null,
+                images: {
+                    create: paperUrls.map(url => ({ url }))
+                }
             }
         });
 
@@ -148,8 +146,7 @@ export async function createTrip(prevState: any, formData: FormData) {
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
 
-    // Read URL from hidden input
-    const paperUrl = formData.get("paperUrl") as string;
+    const paperUrls = formData.getAll("paperUrls") as string[];
 
     if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr) {
         return { message: "All fields are required" };
@@ -167,7 +164,10 @@ export async function createTrip(prevState: any, formData: FormData) {
                 toLocation,
                 date: combinedDateTime,
                 materialType,
-                paperImage: paperUrl || null
+                paperImage: paperUrls[0] || null,
+                images: {
+                    create: paperUrls.map(url => ({ url }))
+                }
             },
         });
 
@@ -191,4 +191,49 @@ export async function createTrip(prevState: any, formData: FormData) {
     } else {
         redirect("/driver?tripSaved=true");
     }
+}
+
+export async function getTripsByRange(startDate: string, endDate: string) {
+    const session = await getSession();
+    if (!session || !session.user) {
+        throw new Error("Unauthorized");
+    }
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const trips = await prisma.trip.findMany({
+        where: {
+            date: {
+                gte: start,
+                lte: end,
+            },
+            vehicle: {
+                ownership: "RVT",
+            },
+        },
+        include: {
+            vehicle: true,
+            driver: true,
+        },
+        orderBy: {
+            date: "desc",
+        },
+    });
+
+    return trips.map((trip) => ({
+        id: trip.id,
+        fromLocation: trip.fromLocation,
+        toLocation: trip.toLocation,
+        vehicle: {
+            number: trip.vehicle.number,
+            ownership: trip.vehicle.ownership,
+        },
+        driver: {
+            name: trip.driver.name,
+        },
+    }));
 }

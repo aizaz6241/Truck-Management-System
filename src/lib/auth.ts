@@ -31,6 +31,7 @@ export async function getSession() {
 }
 
 export async function login(userData: any) {
+    console.log("Creating session for:", userData.email);
     // Create the session
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     const session = await encrypt({ user: userData, expires });

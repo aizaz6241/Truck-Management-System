@@ -1,0 +1,99 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+
+#print-root {
+  display: none;
+}
+
+@media print {
+  html, body {
+    height: auto;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible;
+  }
+
+  /* Hide EVERYTHING in the body except the print portal */
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  /* Ensure the portal is visible and positioned correctly */
+  #print-root {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Reset print root children to be visible just in case */
+  #print-root * {
+      visibility: visible !important;
+      display: block; /* Default to block, overrides flex from screen if any leaked */
+  }
+
+  /* Specific handling for table rows/cells inside print root */
+  #print-root tr { display: table-row !important; }
+  #print-root td, #print-root th { display: table-cell !important; }
+  #print-root table { display: table !important; }
+  #print-root tbody { display: table-row-group !important; }
+  #print-root thead { display: table-header-group !important; }
+  #print-root .flex { display: flex !important; } /* Allow flex inside print if needed */
+
+  html, body {
+    height: auto;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible;
+  }
+  
+  .a4-page {
+    position: relative;
+    width: 210mm !important;
+    height: 295mm !important; /* Reduced to ensure no overflow */
+    box-sizing: border-box;
+    padding: 10mm !important;
+    padding-top: 50mm !important;
+    padding-bottom: 20mm !important; 
+    background-image: url("/RVT_Letterhead.png") !important;
+    background-size: 100% 100% !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    box-shadow: none !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .page-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    display: block !important;
+  }
+
+  /* Break before every page wrapper except the first */
+  .page-wrapper + .page-wrapper {
+      page-break-before: always;
+      break-before: page;
+  }
+}
+
+.statement-table th,
+.statement-table td {
+  border: 1px solid #333;
+  padding: 4px 6px;
+  font-size: 13px;
+}
+
+.statement-table th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  text-align: center;
+}

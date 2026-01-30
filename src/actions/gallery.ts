@@ -75,6 +75,11 @@ export async function getTripPapers(filters: GalleryDocsFilter) {
         id: true,
         date: true,
         paperImage: true,
+        images: {
+          select: {
+            url: true
+          }
+        },
         fromLocation: true,
         toLocation: true,
         materialType: true,

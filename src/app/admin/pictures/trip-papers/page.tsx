@@ -1,5 +1,6 @@
 import { getTripPapers } from "@/actions/gallery";
-import ImageGallery from "@/components/gallery/ImageGallery";
+import GalleryFilter from "@/components/gallery/GalleryFilter";
+import TripPaperCard from "@/components/gallery/TripPaperCard";
 import { getContractors } from "@/lib/actions/contractor";
 import { getDrivers } from "@/actions/driver"; // Assuming we have this or need to create/find it
 import { Metadata } from "next";
@@ -28,14 +29,6 @@ export default async function TripPapersPage({
   const { data: contractors } = await getContractors();
   const { data: drivers } = await getDrivers(); // Need to verify if this exists
 
-  const images = (trips || []).map((trip) => ({
-    id: trip.id,
-    url: trip.paperImage!,
-    title: `Trip #${trip.id} - ${trip.invoice?.contractor?.name || "Unknown"}`,
-    subtitle: `${trip.fromLocation} to ${trip.toLocation} ending at ${trip.date.toISOString().split("T")[0]}`,
-    date: trip.date,
-  }));
-
   // map contractor/driver data for selects
   const contractorOptions = (contractors || []).map(
     (c: { id: number; name: string }) => ({
@@ -52,17 +45,31 @@ export default async function TripPapersPage({
   );
 
   return (
-    <ImageGallery
-      title="Trip Papers"
-      images={images}
-      filterProps={{
-        showContractor: true,
-        showDriver: true,
-        showMaterial: true,
-        showLocation: true,
-        contractors: contractorOptions,
-        drivers: driverOptions,
-      }}
-    />
+    <div className="container" style={{ padding: "1rem" }}>
+      <h1
+        style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "1.5rem" }}
+      >
+        Trip Papers
+      </h1>
+
+      <GalleryFilter
+        showContractor={true}
+        showDriver={true}
+        showMaterial={true}
+        showLocation={true}
+        contractors={contractorOptions}
+        drivers={driverOptions}
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {trips && trips.length > 0 ? (
+          trips.map((trip) => <TripPaperCard key={trip.id} trip={trip} />)
+        ) : (
+          <div style={{ textAlign: "center", padding: "2rem", color: "#666" }}>
+            No trip papers found matching your filters.
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

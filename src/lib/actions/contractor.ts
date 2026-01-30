@@ -53,7 +53,7 @@ export async function createContractor(
     return { success: true, data: contractor };
   } catch (error: any) {
     console.error("Error creating contractor:", error);
-    return { success: false, error: "Failed to create contractor" };
+    return { success: false, error: error.message || "Failed to create contractor" };
   }
 }
 
@@ -71,7 +71,7 @@ export async function getContractors() {
     return { success: true, data: contractors };
   } catch (error) {
     console.error("Error fetching contractors:", error);
-    return { success: false, error: "Failed to fetch contractors" };
+    return { success: false, error: (error as Error).message || "Failed to fetch contractors" };
   }
 }
 
@@ -89,7 +89,7 @@ export async function getContractorById(id: number) {
     return { success: true, data: contractor };
   } catch (error) {
     console.error("Error fetching contractor:", error);
-    return { success: false, error: "Failed to fetch contractor" };
+    return { success: false, error: (error as Error).message || "Failed to fetch contractor" };
   }
 }
 
@@ -151,7 +151,7 @@ export async function updateContractor(
     return { success: true, data: contractor };
   } catch (error: any) {
     console.error("Error updating contractor:", error);
-    return { success: false, error: "Failed to update contractor" };
+    return { success: false, error: error.message || "Failed to update contractor" };
   }
 }
 
@@ -164,7 +164,7 @@ export async function deleteContractor(id: number) {
     return { success: true };
   } catch (error) {
     console.error("Error deleting contractor:", error);
-    return { success: false, error: "Failed to delete contractor" };
+    return { success: false, error: (error as Error).message || "Failed to delete contractor" };
   }
 }
 

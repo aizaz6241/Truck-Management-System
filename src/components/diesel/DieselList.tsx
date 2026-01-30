@@ -87,7 +87,7 @@ export default function DieselList({
     if (res.success) {
       setRecords(records.filter((r) => r.id !== id));
     } else {
-      alert("Failed to delete record");
+      alert(res.error || "Failed to delete record");
     }
     setDeletingId(null);
   };

@@ -88,7 +88,10 @@ export default function AddDieselModal({
         onSuccess(fullRecord);
         onClose();
       } else {
-        alert(initialData ? "Failed to update record" : "Failed to add record");
+        alert(
+          res.error ||
+            (initialData ? "Failed to update record" : "Failed to add record"),
+        );
       }
     });
   };

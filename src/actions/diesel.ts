@@ -65,7 +65,7 @@ export async function addDieselRecord(data: {
     return { success: true, data: record };
   } catch (error) {
     console.error("Error adding diesel record:", error);
-    return { success: false, error: "Failed to add record" };
+    return { success: false, error: (error as Error).message || "Failed to add record" };
   }
 }
 
@@ -98,7 +98,7 @@ export async function updateDieselRecord(id: number, data: {
     return { success: true, data: record };
   } catch (error) {
     console.error("Error updating diesel record:", error);
-    return { success: false, error: "Failed to update record" };
+    return { success: false, error: (error as Error).message || "Failed to update record" };
   }
 }
 
@@ -111,7 +111,7 @@ export async function deleteDieselRecord(id: number) {
     return { success: true };
   } catch (error) {
     console.error("Error deleting diesel record:", error);
-    return { success: false, error: "Failed to delete record" };
+    return { success: false, error: (error as Error).message || "Failed to delete record" };
   }
 }
 

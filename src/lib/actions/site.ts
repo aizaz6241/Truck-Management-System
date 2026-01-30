@@ -46,7 +46,7 @@ export async function getSites() {
     return { success: true, data: sites };
   } catch (error) {
     console.error("Error fetching sites:", error);
-    return { success: false, error: "Failed to fetch sites" };
+    return { success: false, error: (error as Error).message || "Failed to fetch sites" };
   }
 }
 
@@ -59,7 +59,7 @@ export async function deleteSite(id: number) {
     return { success: true };
   } catch (error) {
     console.error("Error deleting site:", error);
-    return { success: false, error: "Failed to delete site" };
+    return { success: false, error: (error as Error).message || "Failed to delete site" };
   }
 }
 
@@ -76,7 +76,7 @@ export async function getSiteById(id: number) {
     return { success: true, data: site };
   } catch (error) {
     console.error("Error fetching site:", error);
-    return { success: false, error: "Failed to fetch site" };
+    return { success: false, error: (error as Error).message || "Failed to fetch site" };
   }
 }
 

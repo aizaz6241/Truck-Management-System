@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   getAdminNotifications,
+  dismissNotification,
   NotificationItem,
 } from "@/actions/notifications";
 import { useLanguage } from "./LanguageProvider";
@@ -97,13 +98,42 @@ export default function NotificationDropdown() {
             notifications.map((n) => (
               <div
                 key={n.id}
-                style={{ padding: "0.75rem", borderBottom: "1px solid #eee" }}
+                style={{
+                  padding: "0.75rem",
+                  borderBottom: "1px solid #eee",
+                  position: "relative",
+                }}
               >
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    // Optimistically remove from UI
+                    setNotifications((prev) =>
+                      prev.filter((item) => item.id !== n.id),
+                    );
+                    await dismissNotification(n.id);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "0.5rem",
+                    right: "0.5rem",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#999",
+                    fontSize: "1rem",
+                    lineHeight: 1,
+                  }}
+                  title="Dismiss"
+                >
+                  &times;
+                </button>
                 <div
                   style={{
                     fontWeight: "bold",
                     fontSize: "0.9rem",
                     color: n.type === "CONTRACT_EXPIRY" ? "#d9534f" : "#f0ad4e",
+                    paddingRight: "1.5rem", // Space for close button
                   }}
                 >
                   {n.type === "CONTRACT_EXPIRY"

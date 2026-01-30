@@ -22,10 +22,12 @@ export default function AdminTripForm({
   const [state, formAction, isPending] = useActionState(action, {
     message: "",
   });
-  const [uploadedUrl, setUploadedUrl] = useState<string>(
-    trip?.paperImage || "",
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>(
+    trip?.images?.map((img: any) => img.url) ||
+      (trip?.paperImage ? [trip.paperImage] : []),
   );
   const [uploadError, setUploadError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const defaultDate = trip?.date
     ? new Date(trip.date).toISOString().split("T")[0]
@@ -41,6 +43,7 @@ export default function AdminTripForm({
   const [selectedRoute, setSelectedRoute] = useState<string>(
     trip ? `${trip.fromLocation}|${trip.toLocation}` : "",
   );
+  const [showWeightDetails, setShowWeightDetails] = useState(!!trip?.weight);
 
   // Memoized Lists
   const sites = useMemo(() => {
@@ -117,6 +120,64 @@ export default function AdminTripForm({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Serial Number (Optional)</label>
+        <input
+          name="serialNumber"
+          defaultValue={trip?.serialNumber || ""}
+          className="form-input"
+          placeholder="Enter Serial Number"
+        />
+      </div>
+
+      <div className="form-group" style={{ marginBottom: "1rem" }}>
+        <label
+          className="form-label"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showWeightDetails}
+            onChange={(e) => setShowWeightDetails(e.target.checked)}
+          />
+          Add Weight & Company Serial
+        </label>
+
+        {showWeightDetails && (
+          <div
+            style={{
+              marginTop: "0.5rem",
+              paddingLeft: "1.5rem",
+              borderLeft: "2px solid #eee",
+            }}
+          >
+            <div className="form-group">
+              <label className="form-label">Weight</label>
+              <input
+                name="weight"
+                defaultValue={trip?.weight || "5000"}
+                className="form-input"
+                placeholder="Enter Weight"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Company Serial Number</label>
+              <input
+                name="companySerialNumber"
+                defaultValue={trip?.companySerialNumber || ""}
+                className="form-input"
+                placeholder="Enter Company Serial Number"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cascading Logic */}
@@ -313,31 +374,122 @@ export default function AdminTripForm({
           <UploadButton
             endpoint="imageUploader"
             onClientUploadComplete={(res: any) => {
-              if (res && res[0]) {
-                setUploadedUrl(res[0].url);
-                alert("Upload Completed");
+              if (res && res.length > 0) {
+                const newUrls = res.map((r: any) => r.ufsUrl || r.url);
+                setUploadedUrls((prev) => [...prev, ...newUrls]);
+                setUploadProgress(100); // Show 100%
+                setTimeout(() => {
+                  setUploadProgress(0); // Reset after 1s
+                  alert("Upload Completed");
+                }, 1000);
               }
+            }}
+            onUploadProgress={(progress: number) => {
+              setUploadProgress(progress);
             }}
             onUploadError={(error: Error) => {
               alert(`ERROR! ${error.message}`);
               setUploadError(error.message);
+              setUploadProgress(0);
             }}
           />
+          {uploadProgress > 0 && (
+            <div
+              style={{
+                width: "100%",
+                backgroundColor: "#e0e0e0",
+                borderRadius: "5px",
+                marginTop: "0.5rem",
+              }}
+            >
+              <div
+                style={{
+                  width: `${uploadProgress}%`,
+                  backgroundColor: "#28a745", // Green for visibility
+                  height: "10px",
+                  borderRadius: "5px",
+                  transition: "width 0.3s ease-in-out",
+                }}
+              />
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  textAlign: "center",
+                  marginTop: "0.2rem",
+                }}
+              >
+                {Math.round(uploadProgress)}%
+              </p>
+            </div>
+          )}
         </div>
-        {uploadedUrl && (
+        {uploadedUrls.length > 0 && (
           <div style={{ marginTop: "0.5rem" }}>
             <p style={{ color: "green", fontSize: "0.9rem" }}>
-              Image Attached Successfully
+              {uploadedUrls.length} Image(s) Attached Successfully
             </p>
-            <a
-              href={uploadedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: "0.8rem", textDecoration: "underline" }}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                marginTop: "0.5rem",
+              }}
             >
-              View Image
-            </a>
-            <input type="hidden" name="paperUrl" value={uploadedUrl} />
+              {uploadedUrls.map((url, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    position: "relative",
+                    border: "1px solid #ddd",
+                    padding: "5px",
+                    borderRadius: "5px",
+                    display: "inline-block",
+                  }}
+                >
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: "0.8rem",
+                      textDecoration: "underline",
+                      marginRight: "1rem",
+                    }}
+                  >
+                    View Image {idx + 1}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setUploadedUrls((prev) =>
+                        prev.filter((_, i) => i !== idx),
+                      )
+                    }
+                    style={{
+                      background: "#ff4d4d",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "20px",
+                      height: "20px",
+                      cursor: "pointer",
+                      fontSize: "0.7rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "absolute",
+                      top: "-5px",
+                      right: "-5px",
+                    }}
+                    title="Remove Image"
+                  >
+                    X
+                  </button>
+                  <input type="hidden" name="paperUrls" value={url} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
         {uploadError && (

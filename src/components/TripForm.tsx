@@ -34,6 +34,9 @@ export default function TripForm({
   const [selectedRoute, setSelectedRoute] = useState<string>(
     initialData ? `${initialData.fromLocation}|${initialData.toLocation}` : "",
   );
+  const [showWeightDetails, setShowWeightDetails] = useState(
+    !!initialData?.weight,
+  );
 
   // Memoized lists based on selection
   const sites = useMemo(() => {
@@ -70,12 +73,12 @@ export default function TripForm({
   });
   const { t } = useLanguage();
 
-  // State for Cloud Upload
+  // State  // Image Upload State
   const [uploadedUrls, setUploadedUrls] = useState<string[]>(
-    initialData?.images?.map((img: any) => img.url) ||
-      (initialData?.paperImage ? [initialData.paperImage] : []),
+    initialData?.images?.map((img: any) => img.url) || [],
   );
   const [uploadError, setUploadError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const defaultDate = initialData?.date
     ? new Date(initialData.date).toISOString().split("T")[0]
@@ -128,6 +131,66 @@ export default function TripForm({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">
+          {t("trip.serialNumber") || "Serial Number"}
+        </label>
+        <input
+          name="serialNumber"
+          defaultValue={initialData?.serialNumber || ""}
+          className="form-input"
+          placeholder="Enter Serial Number"
+        />
+      </div>
+
+      <div className="form-group" style={{ marginBottom: "1rem" }}>
+        <label
+          className="form-label"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showWeightDetails}
+            onChange={(e) => setShowWeightDetails(e.target.checked)}
+          />
+          Add Weight & Company Serial
+        </label>
+
+        {showWeightDetails && (
+          <div
+            style={{
+              marginTop: "0.5rem",
+              paddingLeft: "1.5rem",
+              borderLeft: "2px solid #eee",
+            }}
+          >
+            <div className="form-group">
+              <label className="form-label">Weight</label>
+              <input
+                name="weight"
+                defaultValue={initialData?.weight || "5000"}
+                className="form-input"
+                placeholder="Enter Weight"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Company Serial Number</label>
+              <input
+                name="companySerialNumber"
+                defaultValue={initialData?.companySerialNumber || ""}
+                className="form-input"
+                placeholder="Enter Company Serial Number"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="form-group">
@@ -325,16 +388,53 @@ export default function TripForm({
             endpoint="imageUploader"
             onClientUploadComplete={(res: any) => {
               if (res && res.length > 0) {
-                const newUrls = res.map((r: any) => r.url);
+                const newUrls = res.map((r: any) => r.ufsUrl || r.url);
                 setUploadedUrls((prev) => [...prev, ...newUrls]);
-                alert("Upload Completed");
+                setUploadProgress(100); // Show 100%
+                setTimeout(() => {
+                  setUploadProgress(0); // Reset after 1s
+                  alert("Upload Completed");
+                }, 1000);
               }
+            }}
+            onUploadProgress={(progress: number) => {
+              setUploadProgress(progress);
             }}
             onUploadError={(error: Error) => {
               alert(`ERROR! ${error.message}`);
               setUploadError(error.message);
+              setUploadProgress(0); // Reset progress
             }}
           />
+          {uploadProgress > 0 && (
+            <div
+              style={{
+                width: "100%",
+                backgroundColor: "#e0e0e0",
+                borderRadius: "5px",
+                marginTop: "0.5rem",
+              }}
+            >
+              <div
+                style={{
+                  width: `${uploadProgress}%`,
+                  backgroundColor: "#28a745", // Green for visibility
+                  height: "10px",
+                  borderRadius: "5px",
+                  transition: "width 0.3s ease-in-out",
+                }}
+              />
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  textAlign: "center",
+                  marginTop: "0.2rem",
+                }}
+              >
+                {Math.round(uploadProgress)}%
+              </p>
+            </div>
+          )}
         </div>
 
         {uploadedUrls.length > 0 && (
@@ -351,7 +451,16 @@ export default function TripForm({
               }}
             >
               {uploadedUrls.map((url, idx) => (
-                <div key={idx} style={{ position: "relative" }}>
+                <div
+                  key={idx}
+                  style={{
+                    position: "relative",
+                    border: "1px solid #ddd",
+                    padding: "5px",
+                    borderRadius: "5px",
+                    display: "inline-block",
+                  }}
+                >
                   <a
                     href={url}
                     target="_blank"
@@ -359,14 +468,13 @@ export default function TripForm({
                     style={{
                       fontSize: "0.8rem",
                       textDecoration: "underline",
+                      marginRight: "1rem",
                       display: "block",
                       marginBottom: "0.25rem",
                     }}
                   >
                     View Image {idx + 1}
                   </a>
-                  <input type="hidden" name="paperUrls" value={url} />
-                  {/* Remove button could go here */}
                   <button
                     type="button"
                     onClick={() =>
@@ -375,15 +483,26 @@ export default function TripForm({
                       )
                     }
                     style={{
-                      color: "red",
-                      fontSize: "0.7rem",
+                      background: "#ff4d4d",
+                      color: "white",
                       border: "none",
-                      background: "none",
+                      borderRadius: "50%",
+                      width: "20px",
+                      height: "20px",
                       cursor: "pointer",
+                      fontSize: "0.7rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "absolute",
+                      top: "-5px",
+                      right: "-5px",
                     }}
+                    title="Remove Image"
                   >
-                    [Remove]
+                    X
                   </button>
+                  <input type="hidden" name="paperUrls" value={url} />
                 </div>
               ))}
             </div>

@@ -44,28 +44,62 @@ export async function getAdminNotifications(): Promise<NotificationItem[]> {
         }
     });
 
+// Sort by date soonest
+    // Filter out dismissed notifications
+    // using (prisma as any) because strict typing might be lagging behind the generated client update
+    const dismissed = await (prisma as any).dismissedNotification.findMany({
+        select: { identifier: true }
+    });
+    const dismissedIds = new Set(dismissed.map((d: { identifier: string }) => d.identifier));
+
     const notifications: NotificationItem[] = [];
 
     expiringContracts.forEach(c => {
-        notifications.push({
-            id: `contract-${c.id}`,
-            type: "CONTRACT_EXPIRY",
-            message: `Contract for ${c.name} is expiring soon`,
-            details: c,
-            date: c.contractEndDate!
-        });
+        // ID format: type-id-timestamp
+        // changing timestamp (new expiry) means new ID -> dismissed note reappears if date changes!
+        const id = `contract-${c.id}-${c.contractEndDate?.getTime()}`;
+        if (!dismissedIds.has(id)) {
+            notifications.push({
+                id,
+                type: "CONTRACT_EXPIRY",
+                message: `Contract for ${c.name} is expiring soon`,
+                details: c,
+                date: c.contractEndDate!
+            });
+        }
     });
 
     expiringVehicles.forEach(v => {
-        notifications.push({
-            id: `vehicle-${v.id}`,
-            type: "VEHICLE_REGISTRATION",
-            message: `Registration for ${v.number} (${v.model}) is expiring soon`,
-            details: v,
-            date: v.registrationExpiry!
-        });
+        const id = `vehicle-${v.id}-${v.registrationExpiry?.getTime()}`;
+        if (!dismissedIds.has(id)) {
+            notifications.push({
+                id,
+                type: "VEHICLE_REGISTRATION",
+                message: `Registration for ${v.number} (${v.model}) is expiring soon`,
+                details: v,
+                date: v.registrationExpiry!
+            });
+        }
     });
 
     // Sort by date soonest
     return notifications.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+export async function dismissNotification(identifier: string) {
+    const session = await getSession();
+    if (!session || session.user.role !== "ADMIN") return;
+
+    try {
+        await (prisma as any).dismissedNotification.create({
+            data: {
+                identifier,
+                userId: session.user.id
+            }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to dismiss notification", error);
+        return { success: false };
+    }
 }

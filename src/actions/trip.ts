@@ -58,12 +58,17 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
         return { message: "Unauthorized" };
     }
 
+
+
+    const serialNumber = formData.get("serialNumber") as string;
     const fromLocation = formData.get("fromLocation") as string;
     const toLocation = formData.get("toLocation") as string;
     const dateStr = formData.get("date") as string;
     const timeStr = formData.get("time") as string;
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
+    const weight = formData.get("weight") as string;
+    const companySerialNumber = formData.get("companySerialNumber") as string;
 
     const paperUrls = formData.getAll("paperUrls") as string[];
     const driverId = parseInt(formData.get("driverId") as string);
@@ -81,10 +86,13 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
             data: {
                 driverId: driverId || undefined,
                 vehicleId: parseInt(vehicleIdStr),
+                serialNumber: serialNumber || null,
                 fromLocation,
                 toLocation,
                 date: combinedDateTime,
                 materialType,
+                weight: weight || null,
+                companySerialNumber: companySerialNumber || null,
                 paperImage: paperUrls[0] || null,
                 images: {
                     create: paperUrls.map(url => ({ url }))
@@ -97,6 +105,9 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
         if (tripToCheck.toLocation !== toLocation) changes.push(`To: '${tripToCheck.toLocation}' -> '${toLocation}'`);
         if (tripToCheck.materialType !== materialType) changes.push(`Material: '${tripToCheck.materialType || 'None'}' -> '${materialType || 'None'}'`);
         if (tripToCheck.vehicleId !== parseInt(vehicleIdStr)) changes.push(`Vehicle ID: ${tripToCheck.vehicleId} -> ${vehicleIdStr}`);
+        if (tripToCheck.serialNumber !== serialNumber) changes.push(`Serial Number: '${tripToCheck.serialNumber || 'None'}' -> '${serialNumber || 'None'}'`);
+        if (tripToCheck.weight !== weight) changes.push(`Weight: '${tripToCheck.weight || 'None'}' -> '${weight || 'None'}'`);
+        if (tripToCheck.companySerialNumber !== companySerialNumber) changes.push(`Company Serial: '${tripToCheck.companySerialNumber || 'None'}' -> '${companySerialNumber || 'None'}'`);
 
         const details = changes.length > 0 ? `Updated Trip: ${changes.join(", ")}` : "Updated trip details";
 
@@ -139,12 +150,16 @@ export async function createTrip(prevState: any, formData: FormData) {
         driverId = session.user.id;
     }
 
+
+    const serialNumber = formData.get("serialNumber") as string;
     const fromLocation = formData.get("fromLocation") as string;
     const toLocation = formData.get("toLocation") as string;
     const dateStr = formData.get("date") as string;
     const timeStr = formData.get("time") as string;
     const vehicleIdStr = formData.get("vehicleId") as string;
     const materialType = formData.get("materialType") as string;
+    const weight = formData.get("weight") as string;
+    const companySerialNumber = formData.get("companySerialNumber") as string;
 
     const paperUrls = formData.getAll("paperUrls") as string[];
 
@@ -160,10 +175,13 @@ export async function createTrip(prevState: any, formData: FormData) {
             data: {
                 driverId,
                 vehicleId,
+                serialNumber: serialNumber || null,
                 fromLocation,
                 toLocation,
                 date: combinedDateTime,
                 materialType,
+                weight: weight || null,
+                companySerialNumber: companySerialNumber || null,
                 paperImage: paperUrls[0] || null,
                 images: {
                     create: paperUrls.map(url => ({ url }))

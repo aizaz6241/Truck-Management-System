@@ -9,6 +9,8 @@ import {
 } from "@heroicons/react/24/solid";
 import DieselStatsOverview from "@/components/diesel/DieselStatsOverview";
 
+export const dynamic = "force-dynamic";
+
 export default async function DieselPage() {
   const [dieselData, statsData, vehiclesData, driversData] = await Promise.all([
     getDieselRecords(),

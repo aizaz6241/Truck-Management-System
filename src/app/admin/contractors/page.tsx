@@ -3,6 +3,8 @@ import { getContractors, deleteContractor } from "@/lib/actions/contractor";
 import { Contractor, ContractorDocument } from "@/types/prisma";
 import DocumentViewer from "@/components/DocumentViewer";
 
+export const dynamic = "force-dynamic";
+
 export default async function ContractorsPage() {
   const result = await getContractors();
   const contractors = result.success

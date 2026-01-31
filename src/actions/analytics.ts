@@ -712,3 +712,166 @@ export async function getOwnerTripsAnalytics(ownerId: number, filterType: Filter
         vehicles: Array.from(vehiclesSet)
     };
 }
+
+export async function getOwnerRevenueAnalytics(ownerId: number, filterType: FilterType, dateParam?: string) {
+    let startDate = new Date();
+    let endDate = new Date();
+
+    // Reset endpoints
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (filterType === "today") {
+    } else if (filterType === "7d") {
+        startDate.setDate(startDate.getDate() - 7);
+    } else if (filterType === "30d") {
+        startDate.setDate(startDate.getDate() - 30);
+    } else if (filterType === "6m") {
+        startDate.setMonth(startDate.getMonth() - 6);
+    } else if (filterType === "1y") {
+        startDate.setFullYear(startDate.getFullYear() - 1);
+    } else if (filterType === "date" && dateParam) {
+        startDate = new Date(dateParam);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(dateParam);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "month" && dateParam) {
+        const [year, month] = dateParam.split("-").map(Number);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "year" && dateParam) {
+        const year = parseInt(dateParam);
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+    }
+
+    const trips = await prisma.trip.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            vehicle: { taxiOwnerId: ownerId }
+        },
+        include: { vehicle: true },
+        orderBy: { date: 'asc' }
+    });
+
+    const materials = await prisma.siteMaterial.findMany();
+    const priceMap: { [key: string]: { price: number, unit: string } } = {};
+    materials.forEach(m => {
+        const key = `${m.name.trim().toLowerCase()}|${m.locationFrom.trim().toLowerCase()}|${m.locationTo.trim().toLowerCase()}`;
+        priceMap[key] = { price: m.price, unit: m.unit };
+    });
+
+    const chartDataMap: { [date: string]: any } = {};
+    const vehiclesSet = new Set<string>();
+
+    trips.forEach(trip => {
+        if (!trip.materialType) return;
+        const key = `${trip.materialType.trim().toLowerCase()}|${trip.fromLocation.trim().toLowerCase()}|${trip.toLocation.trim().toLowerCase()}`;
+        const rate = priceMap[key];
+        
+        if (rate) {
+            let price = 0;
+            if (rate.unit === "Per Trip") price = rate.price;
+            else if (rate.unit === "Per Ton") price = rate.price * parseFloat(trip.vehicle.capacity || "0");
+            else price = rate.price;
+
+            const dateKey = new Date(trip.date).toISOString().split('T')[0];
+            const vehicleNum = trip.vehicle.number;
+            vehiclesSet.add(vehicleNum);
+
+            if (!chartDataMap[dateKey]) {
+                chartDataMap[dateKey] = { date: dateKey };
+            }
+            if (!chartDataMap[dateKey][vehicleNum]) {
+                chartDataMap[dateKey][vehicleNum] = 0;
+            }
+            chartDataMap[dateKey][vehicleNum] += price;
+        }
+    });
+
+    Object.values(chartDataMap).forEach(entry => {
+        vehiclesSet.forEach(v => {
+            if (entry[v] === undefined) entry[v] = 0;
+        });
+    });
+
+    const chartData = Object.values(chartDataMap).sort((a: any, b: any) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return { chartData, vehicles: Array.from(vehiclesSet) };
+}
+
+export async function getOwnerDieselAnalytics(ownerId: number, filterType: FilterType, dateParam?: string) {
+    let startDate = new Date();
+    let endDate = new Date();
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (filterType === "today") {
+    } else if (filterType === "7d") {
+        startDate.setDate(startDate.getDate() - 7);
+    } else if (filterType === "30d") {
+        startDate.setDate(startDate.getDate() - 30);
+    } else if (filterType === "6m") {
+        startDate.setMonth(startDate.getMonth() - 6);
+    } else if (filterType === "1y") {
+        startDate.setFullYear(startDate.getFullYear() - 1);
+    } else if (filterType === "date" && dateParam) {
+        startDate = new Date(dateParam);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(dateParam);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "month" && dateParam) {
+        const [year, month] = dateParam.split("-").map(Number);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "year" && dateParam) {
+        const year = parseInt(dateParam);
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+    }
+
+    const records = await prisma.diesel.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            vehicle: { taxiOwnerId: ownerId }
+        },
+        include: { vehicle: true },
+        orderBy: { date: 'asc' }
+    });
+
+    const chartDataMap: { [date: string]: any } = {};
+    const vehiclesSet = new Set<string>();
+
+    records.forEach(record => {
+        const dateKey = new Date(record.date).toISOString().split('T')[0];
+        const vehicleNum = record.vehicle.number;
+        vehiclesSet.add(vehicleNum);
+
+        if (!chartDataMap[dateKey]) {
+            chartDataMap[dateKey] = { date: dateKey };
+        }
+        if (!chartDataMap[dateKey][vehicleNum]) {
+            chartDataMap[dateKey][vehicleNum] = 0;
+        }
+        chartDataMap[dateKey][vehicleNum] += record.totalAmount; // Using Cost (Total Amount)
+    });
+
+    Object.values(chartDataMap).forEach(entry => {
+        vehiclesSet.forEach(v => {
+            if (entry[v] === undefined) entry[v] = 0;
+        });
+    });
+
+    const chartData = Object.values(chartDataMap).sort((a: any, b: any) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return { chartData, vehicles: Array.from(vehiclesSet) };
+}

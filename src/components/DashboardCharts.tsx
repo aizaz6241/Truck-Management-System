@@ -86,6 +86,8 @@ export default function DashboardCharts({
     }
 
     fetchPieData();
+    const interval = setInterval(fetchPieData, 120000);
+    return () => clearInterval(interval);
   }, [pieFilter, customDate]);
 
   const pieData = [

@@ -797,6 +797,24 @@ button {
   }
 }
 
+
+@keyframes ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.animate-ripple {
+  animation: ripple 120s infinite;
+}
+
+
 .diesel-filter-select {
   display: block;
   width: 100%;
@@ -815,6 +833,7 @@ button {
   transition: all 0.2s;
   cursor: pointer;
 }
+
 
 .diesel-filter-select:hover {
   background-color: #f3f4f6;

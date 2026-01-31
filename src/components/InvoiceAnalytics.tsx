@@ -67,6 +67,8 @@ export default function InvoiceAnalytics() {
     }
 
     fetchStats();
+    const interval = setInterval(fetchStats, 120000);
+    return () => clearInterval(interval);
   }, [filter, customDate]);
 
   const formatCurrency = (val: number) => {

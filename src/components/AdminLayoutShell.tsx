@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import AdminSideNav from "./AdminSideNav";
 import NotificationDropdown from "./NotificationDropdown";
+import LiveIndicator from "./LiveIndicator";
 
 export default function AdminLayoutShell({
   children,
@@ -71,7 +72,10 @@ export default function AdminLayoutShell({
             marginBottom: "1rem",
           }}
         >
-          <NotificationDropdown />
+          <div className="flex items-center gap-3">
+            <LiveIndicator />
+            <NotificationDropdown />
+          </div>
         </div>
         {children}
       </main>

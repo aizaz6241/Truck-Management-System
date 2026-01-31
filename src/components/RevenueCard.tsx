@@ -45,6 +45,8 @@ export default function RevenueCard() {
     }
 
     fetchRevenue();
+    const interval = setInterval(fetchRevenue, 120000);
+    return () => clearInterval(interval);
   }, [filter, customDate]);
 
   return (

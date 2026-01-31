@@ -134,6 +134,8 @@ export default function TaxiAnalytics() {
       // Wait for date input
     } else {
       fetchData();
+      const interval = setInterval(fetchData, 120000);
+      return () => clearInterval(interval);
     }
   }, [filterType, dateParam, selectedOwnerId]);
 

@@ -14,6 +14,7 @@ export async function createVehicle(prevState: any, formData: FormData) {
     const status = formData.get("status") as string;
     const ownership = formData.get("ownership") as string;
     const ownerName = formData.get("ownerName") as string;
+    const taxiOwnerId = formData.get("taxiOwnerId") ? parseInt(formData.get("taxiOwnerId") as string) : null;
 
     if (!number || !type || !model || !capacity) {
         return { message: "All fields are required" };
@@ -29,14 +30,12 @@ export async function createVehicle(prevState: any, formData: FormData) {
                 status: status || "Active",
                 ownership: ownership || "RVT",
                 ownerName: ownership === "Taxi" ? ownerName : null,
+                taxiOwnerId: ownership === "Taxi" ? taxiOwnerId : null,
                 registrationExpiry: formData.get("registrationExpiry") ? new Date(formData.get("registrationExpiry") as string) : null
             },
         });
 
         // Auto-Disable check immediately after create?
-        // Or strictly rely on the input status. 
-        // User Policy: "if the license is expired then the vehicle should be disabled"
-        // Let's enforce it:
         if (vehicle.registrationExpiry && new Date(vehicle.registrationExpiry) < new Date()) {
              await prisma.vehicle.update({
                 where: { id: vehicle.id },
@@ -73,6 +72,7 @@ export async function updateVehicle(id: number, prevState: any, formData: FormDa
     const status = formData.get("status") as string;
     const ownership = formData.get("ownership") as string;
     const ownerName = formData.get("ownerName") as string;
+    const taxiOwnerId = formData.get("taxiOwnerId") ? parseInt(formData.get("taxiOwnerId") as string) : null;
 
     try {
         await prisma.vehicle.update({
@@ -85,6 +85,7 @@ export async function updateVehicle(id: number, prevState: any, formData: FormDa
                 status,
                 ownership,
                 ownerName: ownership === "Taxi" ? ownerName : null,
+                taxiOwnerId: ownership === "Taxi" ? taxiOwnerId : null,
                 registrationExpiry: formData.get("registrationExpiry") ? new Date(formData.get("registrationExpiry") as string) : null
             }
         });

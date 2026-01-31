@@ -1,0 +1,180 @@
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(17, 24, 39, 0.7); /* gray-900/70 */
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  .modalWrapper {
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+    z-index: 60;
+  }
+  
+  .modal {
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .headerTitle h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.25rem;
+  }
+  
+  .headerSubtitle {
+    color: #9ca3af; /* gray-400 */
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    display: inline-block;
+  }
+  
+  .closeBtn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #9ca3af;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .closeBtn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    transform: rotate(90deg);
+  }
+  
+  /* Body */
+  .body {
+    padding: 2rem;
+    background-color: #ffffff;
+  }
+  
+  .chartContainer {
+    height: 320px;
+    width: 100%;
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  
+  .centerLabel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    padding-bottom: 2rem; /* Account for legend push */
+  }
+  
+  .centerLabelTitle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #9ca3af;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
+  }
+  
+  .centerLabelValue {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #111827;
+    line-height: 1;
+  }
+  
+  /* Summary Box */
+  .summaryBox {
+    background: linear-gradient(to bottom right, #f3f4f6, #f9fafb);
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .summaryBox::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(to right, #4f46e5, #db2777); /* Theme colors of chart */
+  }
+  
+  .summaryLabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+  
+  .summaryValueGroup {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .summaryValue {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #111827;
+    letter-spacing: -0.025em;
+  }
+  
+  .summaryUnit {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #9ca3af;
+  }
+  

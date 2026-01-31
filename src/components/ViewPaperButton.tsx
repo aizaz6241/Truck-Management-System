@@ -79,12 +79,12 @@ export default function ViewPaperButton({
               backgroundColor: "white",
               padding: "1rem",
               borderRadius: "8px",
-              maxWidth: "90%",
               maxHeight: "90%",
               display: "flex",
               flexDirection: "column",
               gap: "1rem",
-              width: "600px", // Increased width for gallery feel
+              width: "90%" /* Responsive width with margin */,
+              maxWidth: "600px",
             }}
             onClick={(e) => e.stopPropagation()}
           >

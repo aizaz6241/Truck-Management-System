@@ -376,6 +376,9 @@ export default function StatementEditor({
                   }}
                 >
                   <div>DATE: {data.date}</div>
+                  <div>
+                    STATEMENT NO: {String(statementId).padStart(4, "0")}
+                  </div>
                   <div>LPO NO: {data.lpoNo}</div>
                   <div>SITE: {data.site}</div>
                 </div>

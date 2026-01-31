@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useRouter, usePathname } from "next/navigation";
 import { useLoading } from "@/components/LoadingProvider";
+import { useState } from "react";
 
 // Icons (Simple SVGs)
 const HomeIcon = () => (
@@ -247,193 +248,243 @@ export default function AdminSideNav({
     }
   };
 
-  const navItems = [
-    { href: "/admin", label: t("nav.home"), icon: <HomeIcon /> },
-    { href: "/admin/vehicles", label: t("nav.vehicles"), icon: <TruckIcon /> },
-    { href: "/admin/drivers", label: t("nav.drivers"), icon: <UsersIcon /> },
-    { href: "/admin/trips", label: t("nav.trips"), icon: <MapIcon /> },
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+  const toggleGroup = (title: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isCollapsed) toggleSidebar();
+
+    setExpandedGroups((prev) =>
+      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title],
+    );
+  };
+
+  const navConfig = [
+    { type: "link", href: "/admin", label: t("nav.home"), icon: <HomeIcon /> },
     {
-      href: "/admin/invoices",
-      label: "Invoices",
+      type: "group",
+      title: "Fleet",
+      icon: <TruckIcon />,
+      items: [
+        {
+          href: "/admin/vehicles",
+          label: t("nav.vehicles"),
+          icon: <TruckIcon />,
+        },
+        {
+          href: "/admin/drivers",
+          label: t("nav.drivers"),
+          icon: <UsersIcon />,
+        },
+        {
+          href: "/admin/fleet/taxi-owners",
+          label: "Taxi Owners",
+          icon: <UsersIcon />,
+        },
+      ],
+    },
+    {
+      type: "group",
+      title: "Operations",
+      icon: <MapIcon />,
+      items: [
+        { href: "/admin/diesel", label: "Diesel", icon: <DropletIcon /> },
+        { href: "/admin/trips", label: t("nav.trips"), icon: <MapIcon /> },
+        { href: "/admin/invoices", label: "Invoices", icon: <FileTextIcon /> },
+        {
+          href: "/admin/statements",
+          label: "Statements",
+          icon: <FileTextIcon />,
+        },
+      ],
+    },
+    {
+      type: "group",
+      title: "Administration",
+      icon: <SettingsIcon />,
+      items: [
+        {
+          href: "/admin/contractors",
+          label: "Contractors",
+          icon: <UsersIcon />,
+        },
+        { href: "/admin/sites", label: "Sites", icon: <MapPinIcon /> },
+        { href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> },
+        { href: "/admin/logs", label: "Logs", icon: <FileTextIcon /> },
+      ],
+    },
+    {
+      type: "group",
+      title: "Documents",
       icon: <FileTextIcon />,
+      items: [
+        {
+          href: "/admin/pictures/trip-papers",
+          label: "Trip Papers",
+          icon: <ImageIcon />,
+        },
+        {
+          href: "/admin/pictures/cheques",
+          label: "Cheques",
+          icon: <ImageIcon />,
+        },
+        { href: "/admin/payments", label: "Payments", icon: <FileTextIcon /> },
+      ],
     },
-    { href: "/admin/sites", label: "Sites", icon: <MapPinIcon /> },
-    {
-      href: "/admin/contractors",
-      label: "Contractors",
-      icon: <UsersIcon />,
-    },
-    {
-      href: "/admin/pictures/trip-papers",
-      label: "Trip Papers",
-      icon: <ImageIcon />,
-    },
-    {
-      href: "/admin/pictures/cheques",
-      label: "Cheques",
-      icon: <ImageIcon />,
-    },
-    { href: "/admin/payments", label: "Payments", icon: <FileTextIcon /> },
-    { href: "/admin/diesel", label: "Diesel", icon: <DropletIcon /> },
-    { href: "/admin/logs", label: "Logs", icon: <FileTextIcon /> },
-    { href: "/admin/settings", label: "Settings", icon: <SettingsIcon /> },
-    { href: "/admin/statements", label: "Statements", icon: <FileTextIcon /> },
   ];
 
-  return (
-    <nav
-      className="admin-sidebar"
-      style={{
-        width: isCollapsed ? "80px" : "250px",
-        height: "100vh",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        backgroundColor: "var(--surface-color)",
-        borderRight: "1px solid var(--border-color)",
-        display: "flex",
-        flexDirection: "column",
-        transition: "width 0.3s ease",
-        zIndex: 50,
-        overflowX: "hidden",
-        boxShadow: "2px 0 5px rgba(0,0,0,0.05)",
-      }}
+  const ChevronDown = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <div
-        style={{
-          padding: "1rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: isCollapsed ? "center" : "space-between",
-          borderBottom: "1px solid var(--border-color)",
-          height: "70px",
-        }}
-      >
-        {!isCollapsed && (
-          <div
-            style={{
-              fontWeight: "bold",
-              fontSize: "1.1rem",
-              color: "var(--primary-color)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {t("app.title")}
-          </div>
-        )}
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+
+  const ChevronRight = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+
+  return (
+    <nav className={`admin-sidebar ${isCollapsed ? "collapsed" : "expanded"}`}>
+      <div className="sidebar-header">
+        {!isCollapsed && <div className="sidebar-title">{t("app.title")}</div>}
 
         <button
           onClick={toggleSidebar}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginLeft: isCollapsed ? 0 : "auto",
-          }}
+          className="sidebar-toggle-btn"
           title={isCollapsed ? "Expand" : "Collapse"}
         >
           {isCollapsed ? <MenuIcon /> : <ChevronLeftIcon />}
         </button>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          padding: "1rem 0",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-        }}
-      >
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (pathname.startsWith(item.href) && item.href !== "/admin");
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => handleLinkClick(item.href)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "0.75rem 1.5rem",
-                color: isActive
-                  ? "var(--primary-color)"
-                  : "var(--text-secondary)",
-                backgroundColor: isActive
-                  ? "rgba(0, 86, 179, 0.05)"
-                  : "transparent",
-                borderLeft: isActive
-                  ? "4px solid var(--primary-color)"
-                  : "4px solid transparent",
-                textDecoration: "none",
-                justifyContent: isCollapsed ? "center" : "flex-start",
-                transition: "all 0.2s",
-                whiteSpace: "nowrap",
-                height: "50px",
-              }}
-              title={isCollapsed ? item.label : ""}
-            >
-              <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+      <div className="sidebar-content">
+        {navConfig.map((item: any, index) => {
+          if (item.type === "link") {
+            const isActive =
+              pathname === item.href ||
+              (pathname.startsWith(item.href) && item.href !== "/admin");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => handleLinkClick(item.href)}
+                className={`sidebar-link ${isActive ? "active" : ""}`}
+                title={isCollapsed ? item.label : ""}
               >
-                {item.icon}
-              </span>
-              {!isCollapsed && (
-                <span
-                  style={{
-                    marginLeft: "1rem",
-                    fontWeight: isActive ? "600" : "500",
-                  }}
+                <span className="sidebar-icon">{item.icon}</span>
+                {!isCollapsed && (
+                  <span className="sidebar-label">{item.label}</span>
+                )}
+              </Link>
+            );
+          } else {
+            // Group
+            const isExpanded = expandedGroups.includes(item.title);
+            const hasActiveChild = item.items.some(
+              (sub: any) =>
+                pathname === sub.href || pathname.startsWith(sub.href),
+            );
+
+            // Auto-expand if child is active and not manually toggled? State initializes empty.
+            // We can let user expand manually to reduce noise, or auto-expand.
+            // Let's just stick to manual toggle + visual indicator for active parent.
+
+            return (
+              <div key={index} className="sidebar-group">
+                <button
+                  className={`sidebar-link group-header ${hasActiveChild ? "active-parent" : ""}`}
+                  onClick={(e) => toggleGroup(item.title, e)}
+                  style={{ width: "100%", justifyContent: "space-between" }}
+                  title={isCollapsed ? item.title : ""}
                 >
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          );
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <span className="sidebar-icon">{item.icon}</span>
+                    {!isCollapsed && (
+                      <span className="sidebar-label">{item.title}</span>
+                    )}
+                  </div>
+                  {!isCollapsed && (
+                    <span style={{ opacity: 0.5 }}>
+                      {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                    </span>
+                  )}
+                </button>
+
+                {!isCollapsed && isExpanded && (
+                  <div
+                    className="sidebar-subitems"
+                    style={{
+                      paddingLeft: "20px",
+                      backgroundColor: "rgba(0,0,0,0.02)",
+                    }}
+                  >
+                    {item.items.map((sub: any) => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => handleLinkClick(sub.href)}
+                          className={`sidebar-link ${isSubActive ? "active" : ""}`}
+                          style={{ fontSize: "0.9rem", padding: "8px 12px" }}
+                        >
+                          <span
+                            className="sidebar-icon"
+                            style={{ transform: "scale(0.8)" }}
+                          >
+                            {sub.icon}
+                          </span>
+                          <span className="sidebar-label">{sub.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
         })}
       </div>
 
-      <div
-        style={{ padding: "1rem", borderTop: "1px solid var(--border-color)" }}
-      >
+      <div className="sidebar-footer">
         <button
           onClick={handleLogout}
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--danger-color)",
-            fontSize: "1rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: isCollapsed ? "center" : "flex-start",
-            width: "100%",
-            padding: "0.5rem",
-          }}
+          className="sidebar-logout-btn"
           title={isCollapsed ? t("nav.logout") : ""}
         >
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <span className="sidebar-icon">
             <LogOutIcon />
           </span>
           {!isCollapsed && (
-            <span style={{ marginLeft: "1rem" }}>{t("nav.logout")}</span>
+            <span className="sidebar-label">{t("nav.logout")}</span>
           )}
         </button>
       </div>

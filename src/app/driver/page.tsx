@@ -44,16 +44,28 @@ export default async function DriverDashboard(props: {
     orderBy: { date: "desc" },
   });
 
+  const dieselRecords = await prisma.diesel.findMany({
+    where: { driverId },
+    include: {
+      vehicle: true,
+      driver: true,
+    },
+    orderBy: { date: "desc" },
+  });
+
   const vehicles = await prisma.vehicle.findMany({
     where: { status: "Active" },
+    include: { diesel: true },
   });
 
   return (
     <DriverDashboardClient
       trips={trips}
       vehicles={vehicles}
+      dieselRecords={dieselRecords}
       totalTrips={trips.length}
       tripSaved={!!searchParams.tripSaved}
+      driver={{ id: session.user.id, name: session.user.name || "Driver" }}
     />
   );
 }

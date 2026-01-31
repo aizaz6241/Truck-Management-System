@@ -172,6 +172,7 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
 
       {/* Filters Bar */}
       <div
+        className="filter-bar"
         style={{
           display: "flex",
           gap: "10px",
@@ -180,20 +181,21 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
           padding: "15px",
           backgroundColor: "#f8f9fa",
           borderRadius: "8px",
+          alignItems: "center",
         }}
       >
         <input
           type="text"
           placeholder="Search Invoice No"
           className="form-input"
-          style={{ width: "150px", padding: "6px" }}
+          style={{ flex: 1, minWidth: "150px", padding: "6px" }}
           value={filterInvoiceNo}
           onChange={(e) => setFilterInvoiceNo(e.target.value)}
         />
 
         <select
           className="form-select"
-          style={{ width: "auto" }}
+          style={{ flex: 1, minWidth: "150px" }}
           value={filterContractor}
           onChange={(e) => setFilterContractor(e.target.value)}
         >
@@ -207,7 +209,7 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
 
         <select
           className="form-select"
-          style={{ width: "auto" }}
+          style={{ flex: 1, minWidth: "150px" }}
           value={filterMaterial}
           onChange={(e) => setFilterMaterial(e.target.value)}
         >
@@ -221,7 +223,7 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
 
         <select
           className="form-select"
-          style={{ width: "auto" }}
+          style={{ flex: 1, minWidth: "120px" }}
           value={filterYear}
           onChange={(e) => setFilterYear(e.target.value)}
         >
@@ -235,7 +237,7 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
 
         <select
           className="form-select"
-          style={{ width: "auto" }}
+          style={{ flex: 1, minWidth: "120px" }}
           value={filterMonth}
           onChange={(e) => setFilterMonth(e.target.value)}
         >
@@ -249,7 +251,7 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
 
         <select
           className="form-select"
-          style={{ width: "auto" }}
+          style={{ flex: 1, minWidth: "100px" }}
           value={filterDay}
           onChange={(e) => setFilterDay(e.target.value)}
         >
@@ -263,151 +265,189 @@ export default function PaymentsTable({ initialPayments }: PaymentsTableProps) {
 
         <button
           onClick={resetFilters}
+          className="btn"
           style={{
             border: "1px solid #ccc",
             background: "white",
-            padding: "5px 10px",
+            padding: "6px 12px",
             borderRadius: "4px",
             cursor: "pointer",
+            flexShrink: 0,
           }}
         >
           Reset
         </button>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "2px solid #eee" }}>
-            <th
-              style={{ padding: "12px", cursor: "pointer", userSelect: "none" }}
-              onClick={() => handleSort("contractor")}
-            >
-              Contractor{" "}
-              <span style={{ fontSize: "0.8em", color: "#888" }}>
-                {getSortIcon("contractor")}
-              </span>
-            </th>
-            <th style={{ padding: "12px" }}>Material</th>
-            <th style={{ padding: "12px" }}>Invoice No</th>
-            <th style={{ padding: "12px" }}>Date Received</th>
-            <th
-              style={{ padding: "12px", cursor: "pointer", userSelect: "none" }}
-              onClick={() => handleSort("ta")}
-            >
-              TA{" "}
-              <span style={{ fontSize: "0.8em", color: "#888" }}>
-                {getSortIcon("ta")}
-              </span>
-            </th>
-            <th
-              style={{ padding: "12px", cursor: "pointer", userSelect: "none" }}
-              onClick={() => handleSort("ra")}
-            >
-              RA{" "}
-              <span style={{ fontSize: "0.8em", color: "#888" }}>
-                {getSortIcon("ra")}
-              </span>
-            </th>
-            <th
-              style={{ padding: "12px", cursor: "pointer", userSelect: "none" }}
-              onClick={() => handleSort("dif")}
-            >
-              Dif{" "}
-              <span style={{ fontSize: "0.8em", color: "#888" }}>
-                {getSortIcon("dif")}
-              </span>
-            </th>
-            <th style={{ padding: "12px" }}>Cheque No</th>
-            <th style={{ padding: "12px" }}>Cheque</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedPayments.length === 0 ? (
-            <tr>
-              <td
-                colSpan={9}
-                style={{ padding: "20px", textAlign: "center", color: "#666" }}
+      <div className="table-responsive">
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            minWidth: "1000px",
+          }}
+        >
+          <thead>
+            <tr style={{ textAlign: "left", borderBottom: "2px solid #eee" }}>
+              <th
+                style={{
+                  padding: "12px",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                onClick={() => handleSort("contractor")}
               >
-                No payments records found.
-              </td>
+                Contractor{" "}
+                <span style={{ fontSize: "0.8em", color: "#888" }}>
+                  {getSortIcon("contractor")}
+                </span>
+              </th>
+              <th style={{ padding: "12px" }}>Material</th>
+              <th style={{ padding: "12px" }}>Invoice No</th>
+              <th style={{ padding: "12px" }}>Date Received</th>
+              <th
+                style={{
+                  padding: "12px",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                onClick={() => handleSort("ta")}
+              >
+                TA{" "}
+                <span style={{ fontSize: "0.8em", color: "#888" }}>
+                  {getSortIcon("ta")}
+                </span>
+              </th>
+              <th
+                style={{
+                  padding: "12px",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                onClick={() => handleSort("ra")}
+              >
+                RA{" "}
+                <span style={{ fontSize: "0.8em", color: "#888" }}>
+                  {getSortIcon("ra")}
+                </span>
+              </th>
+              <th
+                style={{
+                  padding: "12px",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                onClick={() => handleSort("dif")}
+              >
+                Dif{" "}
+                <span style={{ fontSize: "0.8em", color: "#888" }}>
+                  {getSortIcon("dif")}
+                </span>
+              </th>
+              <th style={{ padding: "12px" }}>Cheque No</th>
+              <th style={{ padding: "12px" }}>Cheque</th>
             </tr>
-          ) : (
-            sortedPayments.map((payment) => {
-              const invoice = payment.invoice;
-              const material = invoice.trips[0]?.materialType || "Unknown";
-              const remaining = invoice.totalAmount - (invoice.paidAmount || 0);
+          </thead>
+          <tbody>
+            {sortedPayments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={9}
+                  style={{
+                    padding: "20px",
+                    textAlign: "center",
+                    color: "#666",
+                  }}
+                >
+                  No payments records found.
+                </td>
+              </tr>
+            ) : (
+              sortedPayments.map((payment) => {
+                const invoice = payment.invoice;
+                const material = invoice.trips[0]?.materialType || "Unknown";
+                const remaining =
+                  invoice.totalAmount - (invoice.paidAmount || 0);
 
-              return (
-                <tr key={payment.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "12px" }}>{invoice.contractor.name}</td>
-                  <td style={{ padding: "12px" }}>
-                    <span
-                      style={{
-                        backgroundColor: "#f0f0f0",
-                        padding: "2px 8px",
-                        borderRadius: "12px",
-                        fontSize: "0.85em",
-                        color: "#666",
-                      }}
-                    >
-                      {material}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px", fontWeight: "bold" }}>
-                    {invoice.invoiceNo}
-                  </td>
-                  <td style={{ padding: "12px" }}>
-                    {new Date(payment.date).toLocaleDateString("en-GB")}
-                  </td>
-                  <td style={{ padding: "12px" }}>
-                    {invoice.totalAmount.toLocaleString()}
-                  </td>
-                  <td
-                    style={{
-                      padding: "12px",
-                      color: "green",
-                      fontWeight: "bold",
-                    }}
+                return (
+                  <tr
+                    key={payment.id}
+                    style={{ borderBottom: "1px solid #eee" }}
                   >
-                    {payment.amount.toLocaleString()}
-                  </td>
-                  <td
-                    style={{
-                      padding: "12px",
-                      color: remaining > 0 ? "red" : "green",
-                    }}
-                  >
-                    {remaining.toLocaleString()}
-                  </td>
-                  <td style={{ padding: "12px" }}>{payment.chequeNo || "-"}</td>
-                  <td style={{ padding: "12px" }}>
-                    {payment.chequeImageUrl ? (
-                      <button
-                        onClick={() =>
-                          setSelectedCheque(payment.chequeImageUrl)
-                        }
+                    <td style={{ padding: "12px" }}>
+                      {invoice.contractor.name}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      <span
                         style={{
-                          border: "1px solid #007bff",
-                          backgroundColor: "#fff",
-                          color: "#007bff",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "0.8rem",
+                          backgroundColor: "#f0f0f0",
+                          padding: "2px 8px",
+                          borderRadius: "12px",
+                          fontSize: "0.85em",
+                          color: "#666",
                         }}
                       >
-                        View Photo
-                      </button>
-                    ) : (
-                      <span style={{ color: "#ccc" }}>-</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                        {material}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px", fontWeight: "bold" }}>
+                      {invoice.invoiceNo}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      {new Date(payment.date).toLocaleDateString("en-GB")}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      {invoice.totalAmount.toLocaleString()}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px",
+                        color: "green",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {payment.amount.toLocaleString()}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px",
+                        color: remaining > 0 ? "red" : "green",
+                      }}
+                    >
+                      {remaining.toLocaleString()}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      {payment.chequeNo || "-"}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      {payment.chequeImageUrl ? (
+                        <button
+                          onClick={() =>
+                            setSelectedCheque(payment.chequeImageUrl)
+                          }
+                          style={{
+                            border: "1px solid #007bff",
+                            backgroundColor: "#fff",
+                            color: "#007bff",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          View Photo
+                        </button>
+                      ) : (
+                        <span style={{ color: "#ccc" }}>-</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

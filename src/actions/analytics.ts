@@ -1,4 +1,5 @@
 "use server";
+// Re-trigger TS check
 
 import { prisma } from "@/lib/db";
 
@@ -508,5 +509,206 @@ export async function getDieselAnalytics(filterType: FilterType, dateParam?: str
         totalCost,
         trend,
         vehicleStats
+    };
+}
+// ... existing code ...
+
+export async function getTaxiAnalytics(filterType: FilterType, dateParam?: string, ownerId?: number) {
+    let startDate = new Date();
+    let endDate = new Date();
+
+    // Reset endpoints
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (filterType === "today") {
+        // Already set to today
+    } else if (filterType === "7d") {
+        startDate.setDate(startDate.getDate() - 7);
+    } else if (filterType === "30d") {
+        startDate.setDate(startDate.getDate() - 30);
+    } else if (filterType === "6m") {
+        startDate.setMonth(startDate.getMonth() - 6);
+    } else if (filterType === "1y") {
+        startDate.setFullYear(startDate.getFullYear() - 1);
+    } else if (filterType === "date" && dateParam) {
+        startDate = new Date(dateParam);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(dateParam);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "month" && dateParam) {
+        const [year, month] = dateParam.split("-").map(Number);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "year" && dateParam) {
+        const year = parseInt(dateParam);
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+    }
+
+    // 1. Fetch Taxi Owners
+    const owners = await prisma.taxiOwner.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' }
+    });
+
+    // 2. Fetch Taxi Trips (for Trips Count & Revenue)
+    // We need logic to calculate revenue for trips.
+    // Reusing logic from getRevenueStats is ideal, but for now we'll duplicate the simple part
+    // or better, just count trips for now and maybe simple revenue if stored? 
+    // revenue is calculated based on material rates.
+    
+    const trips = await prisma.trip.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            vehicle: { ownership: "Taxi" }
+        },
+        include: { vehicle: true }
+    });
+
+    // Calculate Trip Revenue (Basic implementation using Materials)
+    const materials = await prisma.siteMaterial.findMany();
+    const priceMap: { [key: string]: { price: number, unit: string } } = {};
+    materials.forEach(m => {
+        const key = `${m.name.trim().toLowerCase()}|${m.locationFrom.trim().toLowerCase()}|${m.locationTo.trim().toLowerCase()}`;
+        priceMap[key] = { price: m.price, unit: m.unit };
+    });
+
+    let totalTrips = 0;
+    let ownerTrips = 0;
+    let totalRevenue = 0;
+    let ownerRevenue = 0;
+
+    trips.forEach(trip => {
+        totalTrips++;
+        const isOwner = ownerId && trip.vehicle.taxiOwnerId === ownerId;
+        if (isOwner) ownerTrips++;
+
+        // Revenue Calc
+        if (trip.materialType) {
+            const key = `${trip.materialType.trim().toLowerCase()}|${trip.fromLocation.trim().toLowerCase()}|${trip.toLocation.trim().toLowerCase()}`;
+            const rate = priceMap[key];
+            if (rate) {
+                let price = 0;
+                if (rate.unit === "Per Trip") price = rate.price;
+                else if (rate.unit === "Per Ton") price = rate.price * parseFloat(trip.vehicle.capacity || "0");
+                else price = rate.price;
+
+                totalRevenue += price;
+                if (isOwner) ownerRevenue += price;
+            }
+        }
+    });
+
+    // 3. Fetch Diesel
+    const dieselRecords = await prisma.diesel.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            vehicle: { ownership: "Taxi" }
+        },
+        include: { vehicle: true }
+    });
+
+    let totalDieselCost = 0;
+    let ownerDieselCost = 0;
+
+    dieselRecords.forEach(record => {
+        totalDieselCost += record.totalAmount;
+        if (ownerId && record.vehicle.taxiOwnerId === ownerId) {
+            ownerDieselCost += record.totalAmount;
+        }
+    });
+
+    return {
+        owners,
+        trips: { total: totalTrips, owner: ownerTrips },
+        revenue: { total: totalRevenue, owner: ownerRevenue },
+        diesel: { total: totalDieselCost, owner: ownerDieselCost }
+    };
+}
+
+export async function getOwnerTripsAnalytics(ownerId: number, filterType: FilterType, dateParam?: string) {
+    let startDate = new Date();
+    let endDate = new Date();
+
+    // Reset endpoints
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (filterType === "today") {
+        // Already set to today
+    } else if (filterType === "7d") {
+        startDate.setDate(startDate.getDate() - 7);
+    } else if (filterType === "30d") {
+        startDate.setDate(startDate.getDate() - 30);
+    } else if (filterType === "6m") {
+        startDate.setMonth(startDate.getMonth() - 6);
+    } else if (filterType === "1y") {
+        startDate.setFullYear(startDate.getFullYear() - 1);
+    } else if (filterType === "date" && dateParam) {
+        startDate = new Date(dateParam);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(dateParam);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "month" && dateParam) {
+        const [year, month] = dateParam.split("-").map(Number);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === "year" && dateParam) {
+        const year = parseInt(dateParam);
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+    }
+
+    const trips = await prisma.trip.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            vehicle: { taxiOwnerId: ownerId }
+        },
+        include: { vehicle: true },
+        orderBy: { date: 'asc' }
+    });
+
+    // Structure for Recharts: Array of objects { date: 'YYYY-MM-DD', vehicleNum1: count, vehicleNum2: count ... }
+    const chartDataMap: { [date: string]: any } = {};
+    const vehiclesSet = new Set<string>();
+
+    trips.forEach(trip => {
+        const dateKey = new Date(trip.date).toISOString().split('T')[0];
+        const vehicleNum = trip.vehicle.number;
+        vehiclesSet.add(vehicleNum);
+
+        if (!chartDataMap[dateKey]) {
+            chartDataMap[dateKey] = { date: dateKey };
+        }
+        
+        if (!chartDataMap[dateKey][vehicleNum]) {
+            chartDataMap[dateKey][vehicleNum] = 0;
+        }
+        chartDataMap[dateKey][vehicleNum]++;
+    });
+
+    // Fill in zeros for missing vehicles on existing dates to avoid gaps (optional but good for stacked, linear needs it less but safer)
+    // Actually for line chart, missing points might break continuity or just be skipped. 
+    // Let's ensure every date entry has undefined/0 for known vehicles? 
+    // Recharts handles missing keys as undefined. better to put 0.
+    
+    Object.values(chartDataMap).forEach(entry => {
+        vehiclesSet.forEach(v => {
+            if (entry[v] === undefined) entry[v] = 0;
+        });
+    });
+
+    const chartData = Object.values(chartDataMap).sort((a: any, b: any) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return {
+        chartData,
+        vehicles: Array.from(vehiclesSet)
     };
 }

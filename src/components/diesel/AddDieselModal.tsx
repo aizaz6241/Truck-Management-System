@@ -3,6 +3,8 @@
 import { useState, useTransition, useEffect } from "react";
 import { addDieselRecord, updateDieselRecord } from "@/actions/diesel";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import styles from "./AddDieselModal.module.css";
+import { useLanguage } from "../LanguageProvider";
 
 interface AddDieselModalProps {
   isOpen: boolean;
@@ -21,6 +23,7 @@ export default function AddDieselModal({
   onSuccess,
   initialData,
 }: AddDieselModalProps) {
+  const { t, isRTL } = useLanguage();
   const [isPending, startTransition] = useTransition();
   const [vehicleId, setVehicleId] = useState("");
   const [driverId, setDriverId] = useState("");
@@ -99,135 +102,204 @@ export default function AddDieselModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-300">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-300 border border-gray-100">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              {initialData ? "Edit Diesel Record" : "Add New Record"}
-            </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Enter fuel consumption details below
-            </p>
+    <div
+      className={styles.overlay}
+      style={{ direction: isRTL ? "rtl" : "ltr" }}
+    >
+      <div className={styles.modal}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div className={styles.headerContent}>
+            <h2>{initialData ? t("diesel.edit") : t("diesel.new")}</h2>
+            <span className={styles.tag}>{t("diesel.fuelManagement")}</span>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+            className={styles.closeButton}
+            type="button"
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="space-y-5">
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.fieldsContainer}>
             {/* Row 1: Date & Vehicle */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all text-sm bg-gray-50/50 hover:bg-white focus:bg-white"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
+            <div className={styles.row}>
+              <div className={styles.field}>
+                <label className={styles.label}>{t("diesel.date")}</label>
+                <div className={styles.inputWrapper}>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Vehicle
-                </label>
-                <select
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none bg-gray-50/50 hover:bg-white focus:bg-white text-sm"
-                  value={vehicleId}
-                  onChange={(e) => setVehicleId(e.target.value)}
-                  required
-                >
-                  <option value="">Select Vehicle</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.number}
-                    </option>
-                  ))}
-                </select>
+              <div className={styles.field}>
+                <label className={styles.label}>{t("diesel.vehicle")}</label>
+                <div className={styles.inputWrapper}>
+                  <select
+                    className={styles.select}
+                    value={vehicleId}
+                    onChange={(e) => setVehicleId(e.target.value)}
+                    required
+                  >
+                    <option value="">{t("trip.selectVehicle")}</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.number}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    className={styles.selectIcon}
+                    style={isRTL ? { right: "auto", left: "1rem" } : {}}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Row 2: Driver & Odometer */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Driver{" "}
-                  <span className="text-gray-400 font-normal lowercase">
-                    (optional)
+            <div className={styles.row}>
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  {t("diesel.driver")}{" "}
+                  <span className={styles.optional}>
+                    {t("diesel.optional")}
                   </span>
                 </label>
-                <select
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all appearance-none bg-gray-50/50 hover:bg-white focus:bg-white text-sm"
-                  value={driverId}
-                  onChange={(e) => setDriverId(e.target.value)}
-                >
-                  <option value="">Select Driver</option>
-                  {drivers.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                <div className={styles.inputWrapper}>
+                  {drivers.length === 1 ? (
+                    <input
+                      type="text"
+                      className={`${styles.input} ${styles.readOnly}`}
+                      value={drivers[0].name}
+                      readOnly
+                      disabled
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        color: "#6b7280",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <select
+                        className={styles.select}
+                        value={driverId}
+                        onChange={(e) => setDriverId(e.target.value)}
+                      >
+                        <option value="">{t("diesel.selectDriver")}</option>
+                        {drivers.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div
+                        className={styles.selectIcon}
+                        style={isRTL ? { right: "auto", left: "1rem" } : {}}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          viewBox="0 0 16 16"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"
+                          />
+                        </svg>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Odometer{" "}
-                  <span className="text-gray-400 font-normal lowercase">
-                    (optional)
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  {t("diesel.odometer")}{" "}
+                  <span className={styles.optional}>
+                    {t("diesel.optional")}
                   </span>
                 </label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all text-sm bg-gray-50/50 hover:bg-white focus:bg-white placeholder-gray-400"
-                  value={odometer}
-                  onChange={(e) => setOdometer(e.target.value)}
-                  placeholder="Ex: 50000"
-                />
+                <div className={styles.inputWrapper}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={odometer}
+                    onChange={(e) => setOdometer(e.target.value)}
+                    placeholder={t("diesel.odometerPlaceholder")}
+                  />
+                  <div
+                    className={styles.suffix}
+                    style={isRTL ? { right: "auto", left: "1rem" } : {}}
+                  >
+                    {t("diesel.km")}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Calculations Section */}
-            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Liters
-                  </label>
-                  <div className="relative">
+            <div className={styles.calcCard}>
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label className={styles.label}>{t("diesel.volume")}</label>
+                  <div className={styles.inputWrapper}>
                     <input
                       type="number"
                       step="0.01"
-                      className="w-full pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all text-sm bg-white font-mono"
+                      className={styles.input}
                       value={liters}
                       onChange={(e) => setLiters(e.target.value)}
                       required
                       placeholder="0.00"
                     />
-                    <span className="absolute right-3.5 top-2.5 text-gray-400 text-xs font-medium">
-                      L
+                    <span
+                      className={styles.suffix}
+                      style={isRTL ? { right: "auto", left: "1rem" } : {}}
+                    >
+                      {t("diesel.liters")}
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Price / Liter
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-2.5 text-gray-400 text-xs font-medium">
-                      AED
+                <div className={styles.field}>
+                  <label className={styles.label}>{t("diesel.rate")}</label>
+                  <div className={styles.inputWrapper}>
+                    <span
+                      className={styles.prefix}
+                      style={isRTL ? { left: "auto", right: "1rem" } : {}}
+                    >
+                      {t("diesel.currency")}
                     </span>
                     <input
                       type="number"
                       step="0.01"
-                      className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all text-sm bg-white font-mono"
+                      className={`${styles.input} ${styles.inputWithPrefix}`}
+                      style={
+                        isRTL
+                          ? { paddingLeft: "1rem", paddingRight: "3rem" }
+                          : {}
+                      }
                       value={pricePerLiter}
                       onChange={(e) => setPricePerLiter(e.target.value)}
                       required
@@ -237,38 +309,41 @@ export default function AddDieselModal({
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-between items-center border-t border-gray-200/50 mt-2">
-                <span className="text-sm font-semibold text-gray-600">
-                  Total Amount
-                </span>
-                <span className="text-2xl font-bold text-gray-900 tracking-tight">
-                  <span className="text-base text-gray-400 font-normal mr-1">
-                    AED
+              <div className={styles.totalRow}>
+                <div className={styles.totalLabel}>
+                  <span className={styles.totalTitle}>{t("diesel.total")}</span>
+                  <span className={styles.totalSubtitle}>
+                    {t("diesel.autocalc")}
                   </span>
-                  {calculateTotal()}
-                </span>
+                </div>
+                <div className={styles.totalValueBox}>
+                  <span className={styles.currency}>
+                    {t("diesel.currency")}
+                  </span>
+                  <span className={styles.amount}>{calculateTotal()}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className={styles.actions}>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 hover:border-gray-300 transition-all text-sm"
+              className={styles.btnCancel}
               disabled={isPending}
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
+              className={styles.btnSubmit}
               disabled={isPending}
             >
               {isPending ? (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <svg
-                    className="animate-spin h-4 w-4 text-white"
+                    className="animate-spin h-5 w-5 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -287,12 +362,12 @@ export default function AddDieselModal({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Saving...
-                </span>
+                  <span>{t("diesel.processing")}</span>
+                </>
               ) : initialData ? (
-                "Update Record"
+                t("diesel.edit")
               ) : (
-                "Save Record"
+                t("common.submit")
               )}
             </button>
           </div>

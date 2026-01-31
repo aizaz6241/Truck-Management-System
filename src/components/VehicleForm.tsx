@@ -3,7 +3,13 @@
 import { useActionState, useState } from "react";
 import { createVehicle, updateVehicle } from "@/actions/vehicle";
 
-export default function VehicleForm({ vehicle }: { vehicle?: any }) {
+export default function VehicleForm({
+  vehicle,
+  taxiOwners,
+}: {
+  vehicle?: any;
+  taxiOwners?: any[];
+}) {
   const updateVehicleWithId = updateVehicle.bind(null, vehicle?.id);
   const action = vehicle ? updateVehicleWithId : createVehicle;
 
@@ -69,13 +75,55 @@ export default function VehicleForm({ vehicle }: { vehicle?: any }) {
 
       {ownership === "Taxi" && (
         <div className="form-group">
-          <label className="form-label">Owner Name</label>
+          <label className="form-label">Select Taxi Owner</label>
+          {taxiOwners && taxiOwners.length > 0 ? (
+            <select
+              name="taxiOwnerId"
+              className="form-select"
+              defaultValue={vehicle?.taxiOwnerId || ""}
+              required
+              onChange={(e) => {
+                const selectedOwner = taxiOwners.find(
+                  (o: any) => o.id.toString() === e.target.value,
+                );
+                if (selectedOwner) {
+                  // If we want to sync ownerName, we can used a hidden input or state.
+                  // But standard form submission will send ownerName if inside form.
+                  // Let's use a hidden input that updates.
+                  // For now, let's just use the select. Backend handles taxiOwnerId.
+                  // But backend ALSO expects ownerName for the ownership="Taxi" case in my code?
+                  // My updated backend code: ownerName: ownership === "Taxi" ? ownerName : null
+                  // So I should populate ownerName.
+                  const nameInput = document.getElementById(
+                    "hiddenOwnerName",
+                  ) as HTMLInputElement;
+                  if (nameInput) nameInput.value = selectedOwner.name;
+                }
+              }}
+            >
+              <option value="">-- Select Owner --</option>
+              {taxiOwners.map((owner: any) => (
+                <option key={owner.id} value={owner.id}>
+                  {owner.name} ({owner.emiratesId || "No ID"})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="text-red-500 text-sm">
+              No taxi owners found. Please add one in Fleet &gt; Taxi Owners.
+            </div>
+          )}
+          {/* Hidden input to ensure ownerName is sent if backend relies on it */}
           <input
+            type="hidden"
+            id="hiddenOwnerName"
             name="ownerName"
-            defaultValue={vehicle?.ownerName}
-            className="form-input"
-            placeholder="Enter owner name"
-            required
+            defaultValue={
+              vehicle?.ownerName ||
+              taxiOwners?.find((o: any) => o.id === vehicle?.taxiOwnerId)
+                ?.name ||
+              ""
+            }
           />
         </div>
       )}

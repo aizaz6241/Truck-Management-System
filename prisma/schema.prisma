@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,130 +9,143 @@ datasource db {
 }
 
 model User {
-  id             Int      @id @default(autoincrement())
-  name           String
-  email          String   @unique
-  password       String
-  role           String   // "ADMIN" or "DRIVER"
-  phone          String?
-  cnic           String?
-  salary         String?
-  trips          Trip[]
-  diesel         Diesel[]
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String
+  phone     String?
+  cnic      String?
+  salary    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  diesel    Diesel[]
+  trips     Trip[]
 }
 
 model Vehicle {
-  id        Int      @id @default(autoincrement())
-  number    String   @unique
-  type      String
-  model     String
-  capacity  String
-  status    String   // "Active", "Inactive"
-  ownership String   @default("RVT") // "RVT" or "Taxi"
-  ownerName String?  // Required if ownership is "Taxi"
+  id                 Int        @id @default(autoincrement())
+  number             String     @unique
+  type               String
+  model              String
+  capacity           String
+  status             String
+  ownership          String     @default("RVT")
+  ownerName          String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
   registrationExpiry DateTime?
-  trips     Trip[]
-  diesel    Diesel[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  taxiOwnerId        Int?
+  diesel             Diesel[]
+  trips              Trip[]
+  taxiOwner          TaxiOwner? @relation(fields: [taxiOwnerId], references: [id])
+}
+
+model TaxiOwner {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String?
+  phone      String?
+  emiratesId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  vehicles   Vehicle[]
 }
 
 model Trip {
-  id           Int      @id @default(autoincrement())
-  fromLocation String
-  toLocation   String
-  date         DateTime
-  driverId     Int
-  driver       User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  vehicleId    Int
-  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  materialType String?
-  paperImage   String?
-  weight       String?
+  id                  Int         @id @default(autoincrement())
+  fromLocation        String
+  toLocation          String
+  date                DateTime
+  driverId            Int
+  vehicleId           Int
+  materialType        String?
+  paperImage          String?
+  createdAt           DateTime    @default(now())
+  invoiceId           Int?
+  serialNumber        String?
   companySerialNumber String?
-  createdAt    DateTime @default(now())
-  images       TripImage[]
-  invoiceId    Int?
-  invoice      Invoice? @relation(fields: [invoiceId], references: [id])
-  serialNumber String?
+  weight              String?
+  driver              User        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  invoice             Invoice?    @relation(fields: [invoiceId], references: [id])
+  vehicle             Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  images              TripImage[]
 }
 
 model TripImage {
-  id        Int      @id @default(autoincrement())
-  url       String
-  tripId    Int
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  id     Int    @id @default(autoincrement())
+  url    String
+  tripId Int
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
 }
 
 model Invoice {
-  id           Int      @id @default(autoincrement())
-  invoiceNo    String   @unique
-  date         DateTime @default(now())
-  contractorId Int
-  contractor   Contractor @relation(fields: [contractorId], references: [id])
-  trips        Trip[]
-  totalAmount  Float
-  paidAmount   Float    @default(0)
-  status       String   @default("Unpaid") // "Unpaid", "Paid", "Partial"
-  payments     Payment[]
-  metadata     String?  // JSON string for line items snapshot
-  isReceived   Boolean  @default(false)
-  receivedDate DateTime?
+  id              Int        @id @default(autoincrement())
+  invoiceNo       String     @unique
+  date            DateTime   @default(now())
+  contractorId    Int
+  totalAmount     Float
+  paidAmount      Float      @default(0)
+  status          String     @default("Unpaid")
+  metadata        String?
+  isReceived      Boolean    @default(false)
+  receivedDate    DateTime?
   receivedCopyUrl String?
-  letterhead   String?  @default("RVT") // "RVT" or "GVT"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  letterhead      String?    @default("RVT")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  contractor      Contractor @relation(fields: [contractorId], references: [id])
+  payments        Payment[]
+  trips           Trip[]
 }
 
 model Payment {
   id             Int      @id @default(autoincrement())
   invoiceId      Int
-  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   date           DateTime @default(now())
   amount         Float
-  type           String   // "Full Payment", "Partial"
+  type           String
   chequeImageUrl String?
   chequeNo       String?
   bankName       String?
   note           String?
   createdAt      DateTime @default(now())
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {
-  id          Int      @id @default(autoincrement())
-  action      String   // "CREATE", "UPDATE", "DELETE"
-  entity      String   // "TRIP", "VEHICLE", "DRIVER", "USER"
-  entityId    String?  // ID of the affected entity (can be string or int converted to string)
-  details     String?  // JSON string or description of what changed
-  actorId     Int      // User ID of who performed the action
-  actorName   String   // Snapshot of the user's name
-  actorRole   String   // "ADMIN" or "DRIVER"
-  date        DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  actorId   Int
+  actorName String
+  actorRole String
+  date      DateTime @default(now())
 }
 
 model Contractor {
-  id              Int                  @id @default(autoincrement())
-  name            String
-  abbreviation    String? // Optional for old records, but should be required for new
-  address         String?
-  email           String?
-  phone           String
-  licenseNumber   String?
+  id                Int                  @id @default(autoincrement())
+  name              String
+  abbreviation      String?
+  address           String?
+  email             String?
+  phone             String
+  licenseNumber     String?
   contractStartDate DateTime?
-  contractEndDate DateTime?
-  status          String               @default("Active") // "Active", "Inactive"
-  taxId           String?
-  poBox           String?
-  documents       ContractorDocument[]
-  materials       ContractorMaterial[]
-  sites           Site[]
-  invoices        Invoice[]
-  statements      Statement[]
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  contractEndDate   DateTime?
+  status            String               @default("Active")
+  taxId             String?
+  poBox             String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  documents         ContractorDocument[]
+  materials         ContractorMaterial[]
+  invoices          Invoice[]
+  sites             Site[]
+  statements        Statement[]
 }
 
 model ContractorMaterial {
@@ -149,53 +159,51 @@ model ContractorDocument {
   id           Int        @id @default(autoincrement())
   name         String
   url          String
-  type         String?    // e.g., "Contract", "License"
+  type         String?
   contractorId Int
-  contractor   Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+  contractor   Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
 }
 
 model Site {
-  id        Int            @id @default(autoincrement())
-  name      String
-  status    String         @default("Active")
-  materials SiteMaterial[]
+  id           Int            @id @default(autoincrement())
+  name         String
+  status       String         @default("Active")
   contractorId Int?
-  contractor   Contractor? @relation(fields: [contractorId], references: [id])
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  contractor   Contractor?    @relation(fields: [contractorId], references: [id])
+  materials    SiteMaterial[]
 }
 
 model SiteMaterial {
-  id        Int     @id @default(autoincrement())
-  name      String
-  price     Float
-  unit      String  // "Per Trip", "Per Ton", "Per Hour"
+  id           Int    @id @default(autoincrement())
+  name         String
+  price        Float
+  unit         String
   locationFrom String
   locationTo   String
-  siteId    Int
-  site      Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId       Int
+  site         Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
 }
 
 model Statement {
-  id        Int      @id @default(autoincrement())
-  name      String
-  date      DateTime @default(now())
-  type      String   // "Contractor Statement", "Driver Statement"
-  details   String?  // JSON string for parameters used
-  url       String?  // Path to generated file if any
-  createdAt DateTime @default(now())
+  id           Int         @id @default(autoincrement())
+  name         String
+  date         DateTime    @default(now())
+  type         String
+  details      String?
+  url          String?
+  createdAt    DateTime    @default(now())
   contractorId Int?
+  letterhead   String?     @default("RVT")
   contractor   Contractor? @relation(fields: [contractorId], references: [id])
-  letterhead   String?  @default("RVT") // "RVT" or "GVT"
 }
 
 model Diesel {
   id            Int      @id @default(autoincrement())
   vehicleId     Int
-  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
   driverId      Int?
-  driver        User?    @relation(fields: [driverId], references: [id])
   date          DateTime @default(now())
   liters        Float
   pricePerLiter Float
@@ -204,12 +212,13 @@ model Diesel {
   receiptUrl    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  driver        User?    @relation(fields: [driverId], references: [id])
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
 }
 
 model DismissedNotification {
   id         Int      @id @default(autoincrement())
-  identifier String   @unique // e.g., "vehicle-123-2025-01-30"
-  userId     Int?     // Optional, if we want per-user dismissal later
+  identifier String   @unique
+  userId     Int?
   createdAt  DateTime @default(now())
 }
-

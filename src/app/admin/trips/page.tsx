@@ -98,6 +98,8 @@ export default async function TripsPage(props: {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "1.5rem",
+          flexWrap: "wrap",
+          gap: "1rem",
         }}
       >
         <h1>

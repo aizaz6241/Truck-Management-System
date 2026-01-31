@@ -1,0 +1,157 @@
+import { Dialog, Transition } from "@headlessui/react";
+import { Fragment } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+
+interface TripsTrendModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  data: any[];
+  vehicles: string[];
+  loading: boolean;
+  ownerName?: string;
+}
+
+const COLORS = [
+  "#4f46e5", // Indigo
+  "#059669", // Emerald
+  "#d97706", // Amber
+  "#e11d48", // Rose
+  "#0891b2", // Cyan
+  "#7c3aed", // Violet
+  "#0d9488", // Teal
+  "#c026d3", // Fuchsia
+];
+
+export default function TripsTrendModal({
+  isOpen,
+  onClose,
+  data,
+  vehicles,
+  loading,
+  ownerName,
+}: TripsTrendModalProps) {
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <Dialog.Title
+                      as="h3"
+                      className="text-lg font-medium leading-6 text-gray-900"
+                    >
+                      Vehicle Wise Trips Trend
+                    </Dialog.Title>
+                    {ownerName && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Owner: {ownerName}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <XMarkIcon className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  {loading ? (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    </div>
+                  ) : data.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                      <p>No trip data available for this period.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={data}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#eee"
+                        />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 12, fill: "#6b7280" }}
+                          tickFormatter={(val) => {
+                            const d = new Date(val);
+                            return `${d.getDate()}/${d.getMonth() + 1}`;
+                          }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#6b7280" }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "8px",
+                            border: "none",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          }}
+                          labelFormatter={(label) =>
+                            new Date(label).toDateString()
+                          }
+                        />
+                        <Legend />
+                        {vehicles.map((vehicle, index) => (
+                          <Line
+                            key={vehicle}
+                            type="monotone"
+                            dataKey={vehicle}
+                            stroke={COLORS[index % COLORS.length]}
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+}

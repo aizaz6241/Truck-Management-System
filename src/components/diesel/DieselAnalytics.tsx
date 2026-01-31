@@ -18,7 +18,19 @@ import {
   Legend,
   AreaChart,
   Area,
+  Cell,
 } from "recharts";
+
+const COLORS = [
+  "#4f46e5", // Indigo
+  "#059669", // Emerald
+  "#d97706", // Amber
+  "#e11d48", // Rose
+  "#0891b2", // Cyan
+  "#7c3aed", // Violet
+  "#0d9488", // Teal
+  "#c026d3", // Fuchsia
+];
 
 // Since Lucide React isn't fully integrated maybe, reusing icons or SVG if needed.
 // TruckIcon usage confirms we have HeroIcons or Lucide available.
@@ -230,14 +242,19 @@ export default function DieselAnalytics() {
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                 }}
               />
-              <Legend />
               <Bar
                 dataKey="liters"
                 name="Liters"
-                fill="#d97706"
                 radius={[0, 4, 4, 0]}
                 barSize={20}
-              />
+              >
+                {stats.vehicleStats.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

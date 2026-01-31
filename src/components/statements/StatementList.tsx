@@ -9,6 +9,7 @@ interface Statement {
   type: string;
   date: Date;
   createdAt: Date;
+  site?: string;
 }
 
 export default function StatementList({
@@ -93,6 +94,17 @@ export default function StatementList({
                 textAlign: "left",
               }}
             >
+              Site
+            </th>
+            <th
+              className="p-4 font-semibold text-sm"
+              style={{
+                padding: "16px",
+                fontWeight: "600",
+                fontSize: "0.875rem",
+                textAlign: "left",
+              }}
+            >
               Type
             </th>
             <th
@@ -145,7 +157,7 @@ export default function StatementList({
                   fontSize: "0.875rem",
                 }}
               >
-                #{stmt.id}
+                #{String(stmt.id).padStart(4, "0")}
               </td>
               <td
                 className="p-4 font-medium text-gray-900 text-sm"
@@ -157,6 +169,16 @@ export default function StatementList({
                 }}
               >
                 {stmt.name}
+              </td>
+              <td
+                className="p-4 text-gray-600 text-sm"
+                style={{
+                  padding: "16px",
+                  color: "#4b5563",
+                  fontSize: "0.875rem",
+                }}
+              >
+                {stmt.site || "-"}
               </td>
               <td
                 className="p-4 text-sm"

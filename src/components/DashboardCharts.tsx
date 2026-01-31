@@ -28,6 +28,7 @@ import RvtTripsModal from "./RvtTripsModal";
 import RevenueCard from "./RevenueCard";
 import InvoiceAnalytics from "./InvoiceAnalytics";
 import DieselAnalytics from "./diesel/DieselAnalytics";
+import TaxiAnalytics from "./analytics/TaxiAnalytics";
 
 export default function DashboardCharts({
   trend7Days,
@@ -229,7 +230,7 @@ export default function DashboardCharts({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: "2rem",
             alignItems: "stretch",
           }}
@@ -708,6 +709,7 @@ export default function DashboardCharts({
       />
       <RevenueCard />
       <InvoiceAnalytics />
+      <TaxiAnalytics />
       <DieselAnalytics />
     </div>
   );

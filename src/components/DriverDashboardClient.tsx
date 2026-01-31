@@ -6,21 +6,27 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import DeleteTripButton from "./DeleteTripButton";
 import ViewPaperButton from "./ViewPaperButton";
+import DieselList from "./diesel/DieselList";
 
 export default function DriverDashboardClient({
   trips,
   vehicles,
+  dieselRecords = [],
   totalTrips,
   tripSaved,
+  driver,
 }: {
   trips: any[];
   vehicles: any[];
+  dieselRecords?: any[];
   totalTrips: number;
   tripSaved?: boolean;
+  driver?: { id: number | string; name: string };
 }) {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"trips" | "diesel">("trips");
 
   // Local state for filters to avoid constant reload on typing
   const [filterVehicle, setFilterVehicle] = useState(
@@ -50,7 +56,9 @@ export default function DriverDashboardClient({
 
   return (
     <div className="container" style={{ marginTop: "2rem" }}>
-      <h1 style={{ textAlign: "center" }}>{t("driver.dashboard")}</h1>
+      <h1 style={{ textAlign: "center", marginBottom: "2rem" }}>
+        {t("driver.dashboard")}
+      </h1>
 
       {tripSaved && (
         <div
@@ -59,7 +67,7 @@ export default function DriverDashboardClient({
             color: "#155724",
             padding: "1rem",
             borderRadius: "4px",
-            margin: "1rem auto",
+            margin: "0 auto 2rem auto",
             maxWidth: "500px",
             border: "1px solid #c3e6cb",
             textAlign: "center",
@@ -69,245 +77,315 @@ export default function DriverDashboardClient({
         </div>
       )}
 
-      <div style={{ margin: "2rem 0", textAlign: "center" }}>
-        <Link
-          href="/driver/trips/new"
-          className="btn btn-primary"
-          style={{ fontSize: "1.2rem", padding: "1rem 2rem" }}
+      {/* Tabs */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: "2rem",
+          gap: "1rem",
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("trips")}
+          style={{
+            padding: "0.75rem 2rem",
+            borderRadius: "9999px",
+            fontWeight: "600",
+            fontSize: "1.1rem",
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: activeTab === "trips" ? "#3b82f6" : "#e5e7eb",
+            color: activeTab === "trips" ? "white" : "#374151",
+            transition: "all 0.2s",
+          }}
         >
-          {t("trip.add")}
-        </Link>
+          {t("common.trips") || "My Trips"}
+        </button>
+        <button
+          onClick={() => setActiveTab("diesel")}
+          style={{
+            padding: "0.75rem 2rem",
+            borderRadius: "9999px",
+            fontWeight: "600",
+            fontSize: "1.1rem",
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: activeTab === "diesel" ? "#f59e0b" : "#e5e7eb",
+            color: activeTab === "diesel" ? "white" : "#374151",
+            transition: "all 0.2s",
+          }}
+        >
+          {t("diesel.fuelManagement") || "Diesel Records"}
+        </button>
       </div>
 
-      <div className="card">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1rem",
-          }}
-        >
-          <h3>
-            {t("driver.pageTitle")} ({totalTrips})
-          </h3>
-        </div>
-
-        {/* Filters */}
-        <div
-          className="filter-bar"
-          style={{
-            display: "flex",
-            gap: "1rem",
-            flexWrap: "wrap",
-            marginBottom: "1rem",
-            alignItems: "end",
-          }}
-        >
-          <div style={{ flex: 1, minWidth: "150px" }}>
-            <label className="form-label" style={{ marginBottom: "0.25rem" }}>
-              {t("trip.vehicle")}
-            </label>
-            <select
-              className="form-select"
-              value={filterVehicle}
-              onChange={(e) => setFilterVehicle(e.target.value)}
-            >
-              <option value="">{t("trip.selectVehicle")}</option>
-              {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.number}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 1, minWidth: "150px" }}>
-            <label className="form-label" style={{ marginBottom: "0.25rem" }}>
-              {t("trip.material")}
-            </label>
-            <input
-              className="form-input"
-              placeholder={t("trip.material")}
-              value={filterMaterial}
-              onChange={(e) => setFilterMaterial(e.target.value)}
-            />
-          </div>
-          <div style={{ flex: 1, minWidth: "150px" }}>
-            <label className="form-label" style={{ marginBottom: "0.25rem" }}>
-              {t("trip.date")}
-            </label>
-            <input
-              type="date"
-              className="form-input"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-            />
-          </div>
-          <button className="btn btn-primary" onClick={applyFilters}>
-            Filter
-          </button>
-          <button
-            className="btn"
-            style={{ background: "#ccc" }}
-            onClick={clearFilters}
-          >
-            Reset
-          </button>
-        </div>
-
-        <div className="table-responsive">
-          <table
+      {activeTab === "trips" ? (
+        <>
+          <div
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              border: "1px solid var(--border-color)",
-              minWidth: "600px",
+              margin: "2rem 0",
+              textAlign: "center",
+              display: "flex",
+              justifyContent: "center",
             }}
           >
-            <thead>
-              <tr
-                style={{
-                  backgroundColor: "var(--background-color)",
-                  textAlign: "left",
-                }}
-              >
-                <th
-                  style={{
-                    padding: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                  }}
-                >
-                  {t("trip.date")}
-                </th>
-                <th
-                  style={{
-                    padding: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                  }}
+            <Link
+              href="/driver/trips/new"
+              className="btn btn-primary"
+              style={{ fontSize: "1.2rem", padding: "1rem 2rem" }}
+            >
+              {t("trip.add")}
+            </Link>
+          </div>
+
+          <div className="card">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+              }}
+            >
+              <h3>
+                {t("driver.pageTitle")} ({totalTrips})
+              </h3>
+            </div>
+
+            {/* Filters */}
+            <div
+              className="filter-bar"
+              style={{
+                display: "flex",
+                gap: "1rem",
+                flexWrap: "wrap",
+                marginBottom: "1rem",
+                alignItems: "end",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: "150px" }}>
+                <label
+                  className="form-label"
+                  style={{ marginBottom: "0.25rem" }}
                 >
                   {t("trip.vehicle")}
-                </th>
-                <th
-                  style={{
-                    padding: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                  }}
+                </label>
+                <select
+                  className="form-select"
+                  value={filterVehicle}
+                  onChange={(e) => setFilterVehicle(e.target.value)}
                 >
-                  {t("trip.from")} / {t("trip.to")}
-                </th>
-                <th
-                  style={{
-                    padding: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                  }}
+                  <option value="">{t("trip.selectVehicle")}</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: "150px" }}>
+                <label
+                  className="form-label"
+                  style={{ marginBottom: "0.25rem" }}
                 >
                   {t("trip.material")}
-                </th>
-                <th
-                  style={{
-                    padding: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                  }}
+                </label>
+                <input
+                  className="form-input"
+                  placeholder={t("trip.material")}
+                  value={filterMaterial}
+                  onChange={(e) => setFilterMaterial(e.target.value)}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: "150px" }}>
+                <label
+                  className="form-label"
+                  style={{ marginBottom: "0.25rem" }}
                 >
-                  actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {trips.map((trip) => (
-                <tr key={trip.id}>
-                  <td
+                  {t("trip.date")}
+                </label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                />
+              </div>
+              <button className="btn btn-primary" onClick={applyFilters}>
+                Filter
+              </button>
+              <button
+                className="btn"
+                style={{ background: "#ccc" }}
+                onClick={clearFilters}
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="table-responsive">
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  border: "1px solid var(--border-color)",
+                  minWidth: "600px",
+                }}
+              >
+                <thead>
+                  <tr
                     style={{
-                      padding: "0.75rem",
-                      borderBottom: "1px solid var(--border-color)",
+                      backgroundColor: "var(--background-color)",
+                      textAlign: "left",
                     }}
                   >
-                    {new Date(trip.date).toLocaleDateString()}
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.75rem",
-                      borderBottom: "1px solid var(--border-color)",
-                    }}
-                  >
-                    {trip.vehicle.number}
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.75rem",
-                      borderBottom: "1px solid var(--border-color)",
-                    }}
-                  >
-                    {trip.fromLocation} &rarr; {trip.toLocation}
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.75rem",
-                      borderBottom: "1px solid var(--border-color)",
-                    }}
-                  >
-                    {trip.materialType || "-"}
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.75rem",
-                      borderBottom: "1px solid var(--border-color)",
-                      display: "flex",
-                      gap: "0.5rem",
-                      alignItems: "center",
-                    }}
-                  >
-                    {(trip.paperImage ||
-                      (trip.images && trip.images.length > 0)) && (
-                      <ViewPaperButton
-                        imageUrl={
-                          trip.paperImage || trip.images?.[0]?.url || ""
-                        }
-                        images={trip.images?.map((i: any) => i.url) || []}
-                        className="btn"
-                        buttonText={t("trip.paper")}
-                        style={{
-                          padding: "0.25rem 0.5rem",
-                          fontSize: "0.875rem",
-                          backgroundColor: "#17a2b8",
-                          color: "white",
-                          textDecoration: "none",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                      />
-                    )}
-                    <Link
-                      href={`/driver/trips/${trip.id}/edit`}
-                      className="btn"
+                    <th
                       style={{
-                        padding: "0.25rem 0.5rem",
-                        fontSize: "0.875rem",
-                        backgroundColor: "var(--primary-color)",
-                        color: "white",
-                        textDecoration: "none",
+                        padding: "0.75rem",
+                        borderBottom: "1px solid var(--border-color)",
                       }}
                     >
-                      {t("common.edit")}
-                    </Link>
-                    <DeleteTripButton id={trip.id} />
-                  </td>
-                </tr>
-              ))}
-              {trips.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    style={{ padding: "1rem", textAlign: "center" }}
-                  >
-                    No trips found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      {t("trip.date")}
+                    </th>
+                    <th
+                      style={{
+                        padding: "0.75rem",
+                        borderBottom: "1px solid var(--border-color)",
+                      }}
+                    >
+                      {t("trip.vehicle")}
+                    </th>
+                    <th
+                      style={{
+                        padding: "0.75rem",
+                        borderBottom: "1px solid var(--border-color)",
+                      }}
+                    >
+                      {t("trip.from")} / {t("trip.to")}
+                    </th>
+                    <th
+                      style={{
+                        padding: "0.75rem",
+                        borderBottom: "1px solid var(--border-color)",
+                      }}
+                    >
+                      {t("trip.material")}
+                    </th>
+                    <th
+                      style={{
+                        padding: "0.75rem",
+                        borderBottom: "1px solid var(--border-color)",
+                      }}
+                    >
+                      actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trips.map((trip) => (
+                    <tr key={trip.id}>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          borderBottom: "1px solid var(--border-color)",
+                        }}
+                      >
+                        {new Date(trip.date).toLocaleDateString("en-GB")}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          borderBottom: "1px solid var(--border-color)",
+                        }}
+                      >
+                        {trip.vehicle.number}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          borderBottom: "1px solid var(--border-color)",
+                        }}
+                      >
+                        {trip.fromLocation} &rarr; {trip.toLocation}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          borderBottom: "1px solid var(--border-color)",
+                        }}
+                      >
+                        {trip.materialType || "-"}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          borderBottom: "1px solid var(--border-color)",
+                          display: "flex",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                        }}
+                      >
+                        {(trip.paperImage ||
+                          (trip.images && trip.images.length > 0)) && (
+                          <ViewPaperButton
+                            imageUrl={
+                              trip.paperImage || trip.images?.[0]?.url || ""
+                            }
+                            images={trip.images?.map((i: any) => i.url) || []}
+                            className="btn"
+                            buttonText={t("trip.paper")}
+                            style={{
+                              padding: "0.25rem 0.5rem",
+                              fontSize: "0.875rem",
+                              backgroundColor: "#17a2b8",
+                              color: "white",
+                              textDecoration: "none",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          />
+                        )}
+                        <Link
+                          href={`/driver/trips/${trip.id}/edit`}
+                          className="btn"
+                          style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.875rem",
+                            backgroundColor: "var(--primary-color)",
+                            color: "white",
+                            textDecoration: "none",
+                          }}
+                        >
+                          {t("common.edit")}
+                        </Link>
+                        <DeleteTripButton id={trip.id} />
+                      </td>
+                    </tr>
+                  ))}
+                  {trips.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        style={{ padding: "1rem", textAlign: "center" }}
+                      >
+                        No trips found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <DieselList
+          initialData={dieselRecords}
+          vehicles={vehicles}
+          drivers={driver ? [driver] : []}
+          isDriverView={true}
+        />
+      )}
     </div>
   );
 }

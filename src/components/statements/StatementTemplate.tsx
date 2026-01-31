@@ -209,6 +209,7 @@ export default function StatementTemplate({ data }: StatementTemplateProps) {
         }}
       >
         <div>DATE: {statementData.date}</div>
+        <div>STATEMENT NO: 0000</div>
         <div>LPO NO: {statementData.lpoNo}</div>
         <div>SITE: {statementData.site}</div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { updateInvoiceMetadata } from "@/actions/invoice";
 import { numberToWords } from "@/utils/numberToWords";
 import PrintButton from "@/components/PrintButton";
@@ -16,6 +17,7 @@ export default function EditableInvoicePage({
 }: EditableInvoicePageProps) {
   // Check if invoice has stored metadata, otherwise use initial aggregation
   const storedMetadata = invoice.metadata ? JSON.parse(invoice.metadata) : null;
+  const router = useRouter();
 
   // Initial "To" details from invoice/contractor
   const initialToDetails = storedMetadata?.toDetails || {
@@ -297,57 +299,83 @@ export default function EditableInvoicePage({
       <div
         className="no-print invoice-actions"
         style={{
-          textAlign: "right",
-          marginBottom: "1rem",
           display: "flex",
-          justifyContent: "flex-end",
-          gap: "1rem",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
         }}
       >
         <button
-          disabled={saving}
-          onClick={() => handleSave(false)}
-          className="btn btn-primary"
-          style={{
-            backgroundColor: "#4caf50",
-            color: "white",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-        <button
-          onClick={addLineItem}
-          className="btn btn-info"
-          style={{
-            backgroundColor: "#17a2b8",
-            color: "white",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Add Item
-        </button>
-        <button
-          disabled={saving}
-          onClick={() => handleSave(true)}
+          onClick={() => router.push("/admin/invoices")}
           className="btn btn-secondary"
           style={{
-            backgroundColor: "#007bff",
+            backgroundColor: "#6c757d",
             color: "white",
             padding: "8px 16px",
             border: "none",
             borderRadius: "4px",
             cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
           }}
         >
-          {saving ? "Save & Download" : "Save & Download"}
+          ← Back to List
         </button>
+
+        <div
+          style={{
+            textAlign: "right",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "1rem",
+          }}
+        >
+          <button
+            disabled={saving}
+            onClick={() => handleSave(false)}
+            className="btn btn-primary"
+            style={{
+              backgroundColor: "#4caf50",
+              color: "white",
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+          <button
+            onClick={addLineItem}
+            className="btn btn-info"
+            style={{
+              backgroundColor: "#17a2b8",
+              color: "white",
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Add Item
+          </button>
+          <button
+            disabled={saving}
+            onClick={() => handleSave(true)}
+            className="btn btn-secondary"
+            style={{
+              backgroundColor: "#007bff",
+              color: "white",
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            {saving ? "Save & Download" : "Save & Download"}
+          </button>
+        </div>
       </div>
 
       {/* Title */}

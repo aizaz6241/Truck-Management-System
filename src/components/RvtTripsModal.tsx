@@ -32,12 +32,14 @@ interface RvtTripsModalProps {
   isOpen: boolean;
   onClose: () => void;
   trips: Trip[];
+  dateLabel?: string;
 }
 
 export default function RvtTripsModal({
   isOpen,
   onClose,
   trips,
+  dateLabel,
 }: RvtTripsModalProps) {
   const [mounted, setMounted] = useState(false);
   const [tripsData, setTripsData] = useState<Trip[]>(trips);
@@ -93,6 +95,8 @@ export default function RvtTripsModal({
       ).toLocaleDateString()} to ${new Date(
         dateRange.endDate,
       ).toLocaleDateString()}`;
+    } else if (dateLabel) {
+      dateText = `Date: ${dateLabel}`;
     }
     doc.text(dateText, 14, 30);
 
@@ -143,10 +147,15 @@ export default function RvtTripsModal({
       },
     });
 
-    const fileName =
-      dateRange.startDate && dateRange.endDate
-        ? `RVT_Trips_${dateRange.startDate}_${dateRange.endDate}.pdf`
-        : `RVT_Trips_${new Date().toISOString().split("T")[0]}.pdf`;
+    let fileName = `RVT_Trips_${new Date().toISOString().split("T")[0]}.pdf`;
+
+    if (dateRange.startDate && dateRange.endDate) {
+      fileName = `RVT_Trips_${dateRange.startDate}_${dateRange.endDate}.pdf`;
+    } else if (dateLabel) {
+      // Sanitize dateLabel for filename
+      const safeLabel = dateLabel.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      fileName = `RVT_Trips_${safeLabel}.pdf`;
+    }
 
     doc.save(fileName);
   };

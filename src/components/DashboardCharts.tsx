@@ -708,6 +708,23 @@ export default function DashboardCharts({
         isOpen={showRvtModal}
         onClose={() => setShowRvtModal(false)}
         trips={rvtTrips}
+        dateLabel={
+          pieFilter === "today"
+            ? new Date().toLocaleDateString()
+            : pieFilter === "date" && customDate
+              ? new Date(customDate).toLocaleDateString()
+              : pieFilter === "month" && customDate
+                ? customDate
+                : pieFilter === "year" && customDate
+                  ? customDate
+                  : pieFilter === "7d"
+                    ? "Last 7 Days"
+                    : pieFilter === "30d"
+                      ? "Last 30 Days"
+                      : pieFilter === "1y"
+                        ? "Last 1 Year"
+                        : ""
+        }
       />
       <RevenueCard />
       <InvoiceAnalytics />

@@ -9,6 +9,7 @@ export default async function TripsPage(props: {
   searchParams: Promise<{
     driverId?: string;
     vehicleId?: string;
+    contractorId?: string;
     date?: string;
     materialType?: string;
     ownership?: string;
@@ -35,12 +36,76 @@ export default async function TripsPage(props: {
   const page = searchParams.page ? parseInt(searchParams.page) : 1;
   const pageSize = 100;
 
+  const contractorId = searchParams.contractorId
+    ? parseInt(searchParams.contractorId)
+    : undefined;
+
+  const drivers = await prisma.user.findMany({ where: { role: "DRIVER" } });
+  const vehicles = await prisma.vehicle.findMany({
+    where: { status: "Active" },
+  });
+  const contractors = await prisma.contractor.findMany({
+    select: { id: true, name: true },
+  });
+
+  // Get SiteMaterials to infer contractor from route
+  const siteMaterials = await prisma.siteMaterial.findMany({
+    include: {
+      site: {
+        include: {
+          contractor: {
+            select: { id: true, name: true },
+          },
+        },
+      },
+    },
+  });
+
+  // Build a map for quick route lookup: "From|To" -> Contractor
+  const routeContractorMap: Record<string, { id: number; name: string }> = {};
+  siteMaterials.forEach((sm) => {
+    if (sm.site.contractor) {
+      const key = `${sm.locationFrom}|${sm.locationTo}`;
+      // Prefer specific material match if needed, but for now map route to contractor
+      // Note: If multiple contractors use same route, this naive map might pick one arbitrarily.
+      // But typically routes are site-specific.
+      routeContractorMap[key] = sm.site.contractor;
+    }
+  });
+
   const where: any = {};
   if (driverId) where.driverId = driverId;
   if (vehicleId) where.vehicleId = vehicleId;
   if (materialType) where.materialType = { contains: materialType }; // Partial match
   if (ownership) where.vehicle = { ownership: ownership };
   if (serialNumber) where.serialNumber = { contains: serialNumber }; // Partial match
+
+  if (contractorId) {
+    // Complex filter: Trip can be linked via Invoice OR via Route
+    // Prisma doesn't support advanced OR across relations and non-relations comfortably in one object without complex syntax.
+    // simpler approach: Find IDs of trips that match the route condition first?
+    // No, that's too heavy.
+    // Better: Use OR condition.
+
+    // 1. Routes belonging to this contractor
+    const contractorRoutes = siteMaterials
+      .filter((sm) => sm.site.contractorId === contractorId)
+      .map((sm) => ({
+        fromLocation: sm.locationFrom,
+        toLocation: sm.locationTo,
+      }));
+
+    where.OR = [
+      { invoice: { contractorId: contractorId } },
+      // Add route conditions
+      ...contractorRoutes.map((route) => ({
+        AND: [
+          { fromLocation: route.fromLocation },
+          { toLocation: route.toLocation },
+        ],
+      })),
+    ];
+  }
 
   // Date Filtering Logic
   if (date) {
@@ -73,7 +138,12 @@ export default async function TripsPage(props: {
     where,
     take: pageSize,
     skip: (page - 1) * pageSize,
-    include: { driver: true, vehicle: true, images: true },
+    include: {
+      driver: true,
+      vehicle: true,
+      images: true,
+      invoice: { include: { contractor: true } },
+    }, // Included Invoice & Contractor
     orderBy: { date: "desc" },
   });
 
@@ -83,11 +153,6 @@ export default async function TripsPage(props: {
     const dateKey = new Date(trip.date).toDateString();
     if (!groupedTrips[dateKey]) groupedTrips[dateKey] = [];
     groupedTrips[dateKey].push(trip);
-  });
-
-  const drivers = await prisma.user.findMany({ where: { role: "DRIVER" } });
-  const vehicles = await prisma.vehicle.findMany({
-    where: { status: "Active" },
   });
 
   return (
@@ -123,6 +188,7 @@ export default async function TripsPage(props: {
       <TripFilters
         drivers={drivers}
         vehicles={vehicles}
+        contractors={contractors}
         searchParams={searchParams}
       />
 
@@ -189,6 +255,22 @@ export default async function TripsPage(props: {
                   borderBottom: "1px solid var(--border-color)",
                 }}
               >
+                Contractor
+              </th>
+              <th
+                style={{
+                  padding: "1rem",
+                  borderBottom: "1px solid var(--border-color)",
+                }}
+              >
+                Serial No
+              </th>
+              <th
+                style={{
+                  padding: "1rem",
+                  borderBottom: "1px solid var(--border-color)",
+                }}
+              >
                 Route
               </th>
               <th
@@ -222,7 +304,7 @@ export default async function TripsPage(props: {
               <Fragment key={dateKey}>
                 <tr style={{ backgroundColor: "#e9ecef" }}>
                   <td
-                    colSpan={9}
+                    colSpan={11}
                     style={{ padding: "0.5rem 1rem", fontWeight: "bold" }}
                   >
                     {dateKey}
@@ -297,6 +379,28 @@ export default async function TripsPage(props: {
                       style={{
                         padding: "1rem",
                         borderBottom: "1px solid var(--border-color)",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {trip.invoice?.contractor?.name ||
+                        routeContractorMap[
+                          `${trip.fromLocation}|${trip.toLocation}`
+                        ]?.name ||
+                        "-"}
+                    </td>
+                    <td
+                      style={{
+                        padding: "1rem",
+                        borderBottom: "1px solid var(--border-color)",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {trip.serialNumber || "-"}
+                    </td>
+                    <td
+                      style={{
+                        padding: "1rem",
+                        borderBottom: "1px solid var(--border-color)",
                       }}
                     >
                       {trip.fromLocation} &rarr; {trip.toLocation}
@@ -357,7 +461,7 @@ export default async function TripsPage(props: {
             {trips.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={11}
                   style={{ padding: "1rem", textAlign: "center" }}
                 >
                   No trips found.

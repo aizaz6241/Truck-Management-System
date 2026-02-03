@@ -7,10 +7,12 @@ import { useRouter } from "next/navigation";
 export default function TripFilters({
   drivers,
   vehicles,
+  contractors,
   searchParams,
 }: {
   drivers: any[];
   vehicles: any[];
+  contractors: any[];
   searchParams: any;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +26,7 @@ export default function TripFilters({
     searchParams.ownership ||
     searchParams.year ||
     searchParams.month ||
+    searchParams.contractorId ||
     searchParams.serialNumber;
 
   return (
@@ -75,6 +78,21 @@ export default function TripFilters({
               {drivers.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: "150px" }}>
+            <label className="form-label">Contractor</label>
+            <select
+              name="contractorId"
+              defaultValue={searchParams.contractorId}
+              className="form-select"
+            >
+              <option value="">All Contractors</option>
+              {contractors.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>

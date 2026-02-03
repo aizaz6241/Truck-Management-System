@@ -24,11 +24,14 @@ import {
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { getPieStats, getRvtTrips, FilterType } from "@/actions/analytics";
+import { getTripsByRange } from "@/actions/trip";
 import RvtTripsModal from "./RvtTripsModal";
 import RevenueCard from "./RevenueCard";
 import InvoiceAnalytics from "./InvoiceAnalytics";
-import DieselAnalytics from "./diesel/DieselAnalytics";
-import TaxiAnalytics from "./analytics/TaxiAnalytics";
+import DieselAnalytics from "./diesel/DieselAnalytics"; // ID: b3a2b94f-ff22-4af5-bc5d-bd607fce640e
+import TaxiAnalytics from "./analytics/TaxiAnalytics"; // ID: 692c1db6-a229-4d79-8afc-e62afe5cf03a
+import TaxiTripsModal from "./TaxiTripsModal";
+import TotalTripsModal from "./TotalTripsModal";
 
 export default function DashboardCharts({
   trend7Days,
@@ -56,6 +59,12 @@ export default function DashboardCharts({
   const [rvtTrips, setRvtTrips] = useState<any[]>(
     todayTrips.filter((t) => t.vehicle.ownership === "RVT"),
   );
+  const [showTaxiModal, setShowTaxiModal] = useState(false);
+  const [taxiTrips, setTaxiTrips] = useState<any[]>(
+    todayTrips.filter((t) => t.vehicle.ownership === "Taxi"),
+  );
+  const [showTotalModal, setShowTotalModal] = useState(false);
+  const [totalTrips, setTotalTrips] = useState<any[]>(todayTrips);
 
   let data = trend7Days;
   if (trendRange === "30d") data = trend30Days;
@@ -80,12 +89,55 @@ export default function DashboardCharts({
           return;
         }
 
-        const [stats, trips] = await Promise.all([
+        let startDate = new Date();
+        let endDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (pieFilter === "today") {
+          // Already set
+        } else if (pieFilter === "7d") {
+          startDate.setDate(startDate.getDate() - 7);
+        } else if (pieFilter === "30d") {
+          startDate.setDate(startDate.getDate() - 30);
+        } else if (pieFilter === "6m") {
+          startDate.setMonth(startDate.getMonth() - 6);
+        } else if (pieFilter === "1y") {
+          startDate.setFullYear(startDate.getFullYear() - 1);
+        } else if (pieFilter === "date" && customDate) {
+          startDate = new Date(customDate);
+          endDate = new Date(customDate);
+          endDate.setHours(23, 59, 59, 999);
+        } else if (pieFilter === "month" && customDate) {
+          const [year, month] = customDate.split("-").map(Number);
+          startDate = new Date(year, month - 1, 1);
+          endDate = new Date(year, month, 0);
+          endDate.setHours(23, 59, 59, 999);
+        } else if (pieFilter === "year" && customDate) {
+          const year = parseInt(customDate);
+          startDate = new Date(year, 0, 1);
+          endDate = new Date(year, 11, 31);
+          endDate.setHours(23, 59, 59, 999);
+        }
+
+        const [stats, rvt, taxi, all] = await Promise.all([
           getPieStats(pieFilter, customDate),
           getRvtTrips(pieFilter, customDate),
+          getTripsByRange(
+            startDate.toISOString(),
+            endDate.toISOString(),
+            "Taxi",
+          ),
+          getTripsByRange(
+            startDate.toISOString(),
+            endDate.toISOString(),
+            "All",
+          ),
         ]);
         setPieStats(stats);
-        setRvtTrips(trips);
+        setRvtTrips(rvt);
+        setTaxiTrips(taxi);
+        setTotalTrips(all);
       } catch (error) {
         console.error("Failed to fetch pie stats", error);
       } finally {
@@ -255,6 +307,7 @@ export default function DashboardCharts({
           >
             {/* Total Trips Card */}
             <div
+              onClick={() => setShowTotalModal(true)}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -264,9 +317,10 @@ export default function DashboardCharts({
                 border: "1px solid #e5e7eb",
                 borderRadius: "0.75rem",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                cursor: "pointer",
                 transition: "all 0.2s",
               }}
-              className="hover:scale-[1.01] hover:shadow-md"
+              className="hover:scale-[1.01] hover:shadow-md hover:border-blue-300"
             >
               <div>
                 <h4
@@ -286,18 +340,27 @@ export default function DashboardCharts({
                     margin: "0.25rem 0 0",
                     fontSize: "1.875rem",
                     fontWeight: "bold",
-                    color: "var(--primary-color)",
+                    color: "#3b82f6",
                   }}
                 >
                   {loadingPie ? "..." : pieStats.total}
                 </p>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#3b82f6",
+                    fontWeight: "500",
+                  }}
+                >
+                  Click to view details
+                </span>
               </div>
               <div
                 style={{
                   padding: "0.75rem",
                   borderRadius: "0.75rem",
                   backgroundColor: "#eff6ff",
-                  color: "var(--primary-color)",
+                  color: "#3b82f6",
                 }}
               >
                 <BriefcaseIcon style={{ width: "28px", height: "28px" }} />
@@ -382,6 +445,7 @@ export default function DashboardCharts({
 
             {/* Taxi Trips Card */}
             <div
+              onClick={() => setShowTaxiModal(true)}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -391,9 +455,10 @@ export default function DashboardCharts({
                 border: "1px solid #e5e7eb",
                 borderRadius: "0.75rem",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                cursor: "pointer",
                 transition: "all 0.2s",
               }}
-              className="hover:scale-[1.01] hover:shadow-md"
+              className="hover:scale-[1.01] hover:shadow-md hover:border-orange-300"
             >
               <div>
                 <h4
@@ -418,6 +483,15 @@ export default function DashboardCharts({
                 >
                   {loadingPie ? "..." : pieStats.taxi}
                 </p>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#e67e22",
+                    fontWeight: "500",
+                  }}
+                >
+                  Click to view details
+                </span>
               </div>
               <div
                 style={{
@@ -708,6 +782,50 @@ export default function DashboardCharts({
         isOpen={showRvtModal}
         onClose={() => setShowRvtModal(false)}
         trips={rvtTrips}
+        dateLabel={
+          pieFilter === "today"
+            ? new Date().toLocaleDateString()
+            : pieFilter === "date" && customDate
+              ? new Date(customDate).toLocaleDateString()
+              : pieFilter === "month" && customDate
+                ? customDate
+                : pieFilter === "year" && customDate
+                  ? customDate
+                  : pieFilter === "7d"
+                    ? "Last 7 Days"
+                    : pieFilter === "30d"
+                      ? "Last 30 Days"
+                      : pieFilter === "1y"
+                        ? "Last 1 Year"
+                        : ""
+        }
+      />
+      <TaxiTripsModal
+        isOpen={showTaxiModal}
+        onClose={() => setShowTaxiModal(false)}
+        trips={taxiTrips}
+        dateLabel={
+          pieFilter === "today"
+            ? new Date().toLocaleDateString()
+            : pieFilter === "date" && customDate
+              ? new Date(customDate).toLocaleDateString()
+              : pieFilter === "month" && customDate
+                ? customDate
+                : pieFilter === "year" && customDate
+                  ? customDate
+                  : pieFilter === "7d"
+                    ? "Last 7 Days"
+                    : pieFilter === "30d"
+                      ? "Last 30 Days"
+                      : pieFilter === "1y"
+                        ? "Last 1 Year"
+                        : ""
+        }
+      />
+      <TotalTripsModal
+        isOpen={showTotalModal}
+        onClose={() => setShowTotalModal(false)}
+        trips={totalTrips}
         dateLabel={
           pieFilter === "today"
             ? new Date().toLocaleDateString()

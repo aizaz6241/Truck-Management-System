@@ -211,7 +211,7 @@ export async function createTrip(prevState: any, formData: FormData) {
     }
 }
 
-export async function getTripsByRange(startDate: string, endDate: string) {
+export async function getTripsByRange(startDate: string, endDate: string, ownership: string = "RVT") {
     const session = await getSession();
     if (!session || !session.user) {
         throw new Error("Unauthorized");
@@ -223,18 +223,27 @@ export async function getTripsByRange(startDate: string, endDate: string) {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const trips = await prisma.trip.findMany({
-        where: {
-            date: {
-                gte: start,
-                lte: end,
-            },
-            vehicle: {
-                ownership: "RVT",
-            },
+    const whereClause: any = {
+        date: {
+            gte: start,
+            lte: end,
         },
+    };
+
+    if (ownership !== "All") {
+        whereClause.vehicle = {
+            ownership: ownership,
+        };
+    }
+
+    const trips = await prisma.trip.findMany({
+        where: whereClause,
         include: {
-            vehicle: true,
+            vehicle: {
+                include: {
+                    taxiOwner: true
+                }
+            },
             driver: true,
         },
         orderBy: {
@@ -249,6 +258,10 @@ export async function getTripsByRange(startDate: string, endDate: string) {
         vehicle: {
             number: trip.vehicle.number,
             ownership: trip.vehicle.ownership,
+            ownerName: trip.vehicle.ownerName,
+            taxiOwner: trip.vehicle.taxiOwner ? {
+                name: trip.vehicle.taxiOwner.name
+            } : null
         },
         driver: {
             name: trip.driver.name,

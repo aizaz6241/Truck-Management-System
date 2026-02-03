@@ -23,7 +23,7 @@ import {
   CurrencyDollarIcon,
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
-import { getPieStats, FilterType } from "@/actions/analytics";
+import { getPieStats, getRvtTrips, FilterType } from "@/actions/analytics";
 import RvtTripsModal from "./RvtTripsModal";
 import RevenueCard from "./RevenueCard";
 import InvoiceAnalytics from "./InvoiceAnalytics";
@@ -53,14 +53,18 @@ export default function DashboardCharts({
   });
   const [loadingPie, setLoadingPie] = useState(false);
   const [showRvtModal, setShowRvtModal] = useState(false);
+  const [rvtTrips, setRvtTrips] = useState<any[]>(
+    todayTrips.filter((t) => t.vehicle.ownership === "RVT"),
+  );
 
   let data = trend7Days;
   if (trendRange === "30d") data = trend30Days;
   if (trendRange === "1y") data = trend1Year;
 
-  const rvtTripsDetails = todayTrips.filter(
-    (t) => t.vehicle.ownership === "RVT",
-  );
+  // No longer needed as we fetch this dynamically
+  // const rvtTripsDetails = todayTrips.filter(
+  //   (t) => t.vehicle.ownership === "RVT",
+  // );
 
   useEffect(() => {
     async function fetchPieData() {
@@ -76,8 +80,12 @@ export default function DashboardCharts({
           return;
         }
 
-        const stats = await getPieStats(pieFilter, customDate);
+        const [stats, trips] = await Promise.all([
+          getPieStats(pieFilter, customDate),
+          getRvtTrips(pieFilter, customDate),
+        ]);
         setPieStats(stats);
+        setRvtTrips(trips);
       } catch (error) {
         console.error("Failed to fetch pie stats", error);
       } finally {
@@ -299,7 +307,7 @@ export default function DashboardCharts({
             {/* RVT Trips Card (Clickable) */}
             <div
               onClick={() => {
-                if (pieFilter === "today") setShowRvtModal(true);
+                setShowRvtModal(true);
               }}
               style={{
                 display: "flex",
@@ -310,29 +318,23 @@ export default function DashboardCharts({
                 border: "1px solid #e5e7eb",
                 borderRadius: "0.75rem",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                cursor: pieFilter === "today" ? "pointer" : "default",
+                cursor: "pointer",
                 transition: "all 0.2s",
                 position: "relative",
                 overflow: "hidden",
               }}
-              className={
-                pieFilter === "today"
-                  ? "hover:scale-[1.01] hover:shadow-md hover:border-indigo-300"
-                  : ""
-              }
+              className="hover:scale-[1.01] hover:shadow-md hover:border-indigo-300"
             >
-              {pieFilter === "today" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    width: "4px",
-                    backgroundColor: "var(--secondary-color)",
-                  }}
-                ></div>
-              )}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
+                  width: "4px",
+                  backgroundColor: "var(--secondary-color)",
+                }}
+              ></div>
               <div>
                 <h4
                   style={{
@@ -356,17 +358,15 @@ export default function DashboardCharts({
                 >
                   {loadingPie ? "..." : pieStats.rvt}
                 </p>
-                {pieFilter === "today" && (
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "var(--secondary-color)",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Click to view details
-                  </span>
-                )}
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--secondary-color)",
+                    fontWeight: "500",
+                  }}
+                >
+                  Click to view details
+                </span>
               </div>
               <div
                 style={{
@@ -707,7 +707,7 @@ export default function DashboardCharts({
       <RvtTripsModal
         isOpen={showRvtModal}
         onClose={() => setShowRvtModal(false)}
-        trips={rvtTripsDetails}
+        trips={rvtTrips}
       />
       <RevenueCard />
       <InvoiceAnalytics />

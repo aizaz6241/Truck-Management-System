@@ -990,3 +990,137 @@ export async function getOwnerDieselAnalytics(
 
   return { chartData, vehicles: Array.from(vehiclesSet) };
 }
+
+export async function getContractorTripStats(
+  filterType: FilterType,
+  dateParam?: string,
+) {
+  let startDate = new Date();
+  let endDate = new Date();
+
+  // Reset endpoints
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
+
+  if (filterType === "today") {
+    // Already set to today
+  } else if (filterType === "7d") {
+    startDate.setDate(startDate.getDate() - 7);
+  } else if (filterType === "30d") {
+    startDate.setDate(startDate.getDate() - 30);
+  } else if (filterType === "6m") {
+    startDate.setMonth(startDate.getMonth() - 6);
+  } else if (filterType === "1y") {
+    startDate.setFullYear(startDate.getFullYear() - 1);
+  } else if (filterType === "date" && dateParam) {
+    startDate = new Date(dateParam);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(dateParam);
+    endDate.setHours(23, 59, 59, 999);
+  } else if (filterType === "month" && dateParam) {
+    const [year, month] = dateParam.split("-").map(Number);
+    startDate = new Date(year, month - 1, 1);
+    endDate = new Date(year, month, 0);
+    endDate.setHours(23, 59, 59, 999);
+  } else if (filterType === "year" && dateParam) {
+    const year = parseInt(dateParam);
+    startDate = new Date(year, 0, 1);
+    endDate = new Date(year, 11, 31);
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  // 1. Build Material Map & Route Map
+  // MaterialMap: Material|From|To -> ContractorName
+  // RouteMap: From|To -> Set<ContractorName>
+  const siteMaterials = await prisma.siteMaterial.findMany({
+    include: {
+      site: {
+        include: {
+          contractor: true,
+        },
+      },
+    },
+  });
+
+  const materialMap: { [key: string]: string } = {};
+  const routeMap: { [key: string]: Set<string> } = {};
+
+  siteMaterials.forEach((sm) => {
+    if (sm.site && sm.site.contractor) {
+      const contractorName = sm.site.contractor.name;
+      const normalizedFrom = sm.locationFrom.trim().toLowerCase();
+      const normalizedTo = sm.locationTo.trim().toLowerCase();
+      const normalizedMat = sm.name.trim().toLowerCase();
+
+      // Exact Match Key
+      const fullKey = `${normalizedMat}|${normalizedFrom}|${normalizedTo}`;
+      materialMap[fullKey] = contractorName;
+
+      // Route Fallback Key
+      const routeKey = `${normalizedFrom}|${normalizedTo}`;
+      if (!routeMap[routeKey]) {
+        routeMap[routeKey] = new Set();
+      }
+      routeMap[routeKey].add(contractorName);
+    }
+  });
+
+  // 2. Fetch Trips
+  const trips = await prisma.trip.findMany({
+    where: {
+      date: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      invoice: {
+        include: {
+          contractor: true,
+        },
+      },
+    },
+  });
+
+  // 3. Aggregate by Contractor
+  const contractorCounts: { [name: string]: number } = {};
+
+  trips.forEach((trip) => {
+    let contractorName = "Unknown";
+
+    // Priority 1: Invoice
+    if (trip.invoice && trip.invoice.contractor) {
+      contractorName = trip.invoice.contractor.name;
+    }
+    // Priority 2: Material Map (Exact Match)
+    else if (trip.materialType) {
+      const normalizedFrom = trip.fromLocation.trim().toLowerCase();
+      const normalizedTo = trip.toLocation.trim().toLowerCase();
+      const normalizedMat = trip.materialType.trim().toLowerCase();
+
+      const fullKey = `${normalizedMat}|${normalizedFrom}|${normalizedTo}`;
+      
+      if (materialMap[fullKey]) {
+        contractorName = materialMap[fullKey];
+      } 
+      // Priority 3: Route Fallback (If route is exclusively one contractor)
+      else {
+          const routeKey = `${normalizedFrom}|${normalizedTo}`;
+          const contractors = routeMap[routeKey];
+          if (contractors && contractors.size === 1) {
+              contractorName = Array.from(contractors)[0];
+          }
+      }
+    }
+
+    contractorCounts[contractorName] =
+      (contractorCounts[contractorName] || 0) + 1;
+  });
+
+  // 4. Format for Chart
+  const result = Object.entries(contractorCounts)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
+  return result;
+}

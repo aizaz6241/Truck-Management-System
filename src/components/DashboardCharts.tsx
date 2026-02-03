@@ -32,6 +32,8 @@ import DieselAnalytics from "./diesel/DieselAnalytics"; // ID: b3a2b94f-ff22-4af
 import TaxiAnalytics from "./analytics/TaxiAnalytics"; // ID: 692c1db6-a229-4d79-8afc-e62afe5cf03a
 import TaxiTripsModal from "./TaxiTripsModal";
 import TotalTripsModal from "./TotalTripsModal";
+import ContractorTripsPieChart from "./ContractorTripsPieChart";
+import { getContractorTripStats } from "@/actions/analytics";
 
 export default function DashboardCharts({
   trend7Days,
@@ -65,6 +67,14 @@ export default function DashboardCharts({
   );
   const [showTotalModal, setShowTotalModal] = useState(false);
   const [totalTrips, setTotalTrips] = useState<any[]>(todayTrips);
+
+  // Contractor Trips State
+  const [contractorFilter, setContractorFilter] = useState<FilterType>("today");
+  const [contractorDateParam, setContractorDateParam] = useState("");
+  const [contractorStats, setContractorStats] = useState<
+    { name: string; value: number }[]
+  >([]);
+  const [loadingContractor, setLoadingContractor] = useState(false);
 
   let data = trend7Days;
   if (trendRange === "30d") data = trend30Days;
@@ -149,6 +159,39 @@ export default function DashboardCharts({
     const interval = setInterval(fetchPieData, 120000);
     return () => clearInterval(interval);
   }, [pieFilter, customDate]);
+
+  // Fetch Contractor Stats
+  useEffect(() => {
+    async function fetchContractorData() {
+      setLoadingContractor(true);
+      try {
+        if (
+          (contractorFilter === "date" ||
+            contractorFilter === "month" ||
+            contractorFilter === "year") &&
+          !contractorDateParam
+        ) {
+          setLoadingContractor(false);
+          return;
+        }
+
+        const stats = await getContractorTripStats(
+          contractorFilter,
+          contractorDateParam,
+        );
+        setContractorStats(stats);
+      } catch (error) {
+        console.error("Failed to fetch contractor stats", error);
+      } finally {
+        setLoadingContractor(false);
+      }
+    }
+
+    fetchContractorData();
+    // Refresh every 2 minutes
+    const interval = setInterval(fetchContractorData, 120000);
+    return () => clearInterval(interval);
+  }, [contractorFilter, contractorDateParam]);
 
   const pieData = [
     { name: "RVT", value: pieStats.rvt },
@@ -778,6 +821,134 @@ export default function DashboardCharts({
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Contractor Wise Trips Section */}
+      <div className="card" style={{ marginTop: "2rem", padding: "1.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1.5rem",
+            flexWrap: "wrap",
+            gap: "1rem",
+            paddingBottom: "1rem",
+            borderBottom: "1px solid #e5e7eb",
+          }}
+        >
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+          >
+            <div
+              style={{
+                padding: "0.5rem",
+                borderRadius: "0.5rem",
+                backgroundColor: "#ecfdf5",
+                color: "#10b981",
+              }}
+            >
+              <BriefcaseIcon style={{ width: "24px", height: "24px" }} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.25rem", color: "#111827" }}>
+                Contractor Wise Trips
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.875rem", color: "#6b7280" }}>
+                Distribution of trips by contractor
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <select
+              value={contractorFilter}
+              onChange={(e) => {
+                setContractorFilter(e.target.value as FilterType);
+                setContractorDateParam("");
+              }}
+              className="form-select"
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "0.875rem",
+                borderRadius: "0.375rem",
+                border: "1px solid #d1d5db",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              <option value="today">Today</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="6m">Last 6 Months</option>
+              <option value="1y">Last 1 Year</option>
+              <option value="date">Specific Date</option>
+              <option value="month">Specific Month</option>
+              <option value="year">Specific Year</option>
+            </select>
+
+            {contractorFilter === "date" && (
+              <input
+                type="date"
+                value={contractorDateParam}
+                onChange={(e) => setContractorDateParam(e.target.value)}
+                className="form-input"
+                style={{
+                  padding: "0.4rem",
+                  borderRadius: "0.375rem",
+                  border: "1px solid #d1d5db",
+                }}
+              />
+            )}
+            {contractorFilter === "month" && (
+              <input
+                type="month"
+                value={contractorDateParam}
+                onChange={(e) => setContractorDateParam(e.target.value)}
+                className="form-input"
+                style={{
+                  padding: "0.4rem",
+                  borderRadius: "0.375rem",
+                  border: "1px solid #d1d5db",
+                }}
+              />
+            )}
+            {contractorFilter === "year" && (
+              <input
+                type="number"
+                placeholder="Year"
+                value={contractorDateParam}
+                onChange={(e) => setContractorDateParam(e.target.value)}
+                className="form-input"
+                style={{
+                  padding: "0.4rem",
+                  borderRadius: "0.375rem",
+                  border: "1px solid #d1d5db",
+                  width: "80px",
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        <div style={{ height: "500px", width: "100%" }}>
+          {loadingContractor ? (
+            <div
+              style={{
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#6b7280",
+              }}
+            >
+              Loading...
+            </div>
+          ) : (
+            <ContractorTripsPieChart data={contractorStats} />
+          )}
+        </div>
+      </div>
+
       <RvtTripsModal
         isOpen={showRvtModal}
         onClose={() => setShowRvtModal(false)}

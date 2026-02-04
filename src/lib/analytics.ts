@@ -14,7 +14,7 @@ export async function getAnalyticsData() {
                 lt: endOfDay
             }
         },
-        include: { driver: true, vehicle: true },
+        include: { driver: true, vehicle: { include: { taxiOwner: true } } },
         orderBy: { date: "desc" }
     });
 

@@ -37,7 +37,9 @@ export default function AdminTripForm({
     : new Date().toTimeString().slice(0, 5);
 
   // Cascading State
-  const [selectedContractorId, setSelectedContractorId] = useState<string>("");
+  const [selectedContractorId, setSelectedContractorId] = useState<string>(
+    trip?.contractorId?.toString() || "",
+  );
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [selectedMaterialName, setSelectedMaterialName] = useState<string>("");
   const [selectedRoute, setSelectedRoute] = useState<string>(
@@ -193,23 +195,37 @@ export default function AdminTripForm({
                     For simplicity, let's replicate TripForm logic: If !initialData (trip), show cascading.
                 */}
 
-        {!trip && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-              marginBottom: "1rem",
-              padding: "1rem",
-              backgroundColor: "#f8f9fa",
-              borderRadius: "8px",
-            }}
-          >
-            <div>
-              <label className="form-label" style={{ fontSize: "0.9rem" }}>
-                Contractor
-              </label>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+            marginBottom: "1rem",
+            padding: "1rem",
+            backgroundColor: "#f8f9fa",
+            borderRadius: "8px",
+          }}
+        >
+          <div>
+            <label
+              className="form-label"
+              style={{
+                fontSize: "0.9rem",
+                color: "var(--primary-color)",
+                fontWeight: "bold",
+              }}
+            >
+              Contractor (Manual Assignment)
+            </label>
+            {contractors.length === 0 ? (
+              <div
+                style={{ padding: "0.5rem", color: "red", fontSize: "0.8rem" }}
+              >
+                No active contractors found. Please add contractors first.
+              </div>
+            ) : (
               <select
+                name="contractorId"
                 className="form-select"
                 value={selectedContractorId}
                 onChange={(e) => {
@@ -227,82 +243,86 @@ export default function AdminTripForm({
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="form-label" style={{ fontSize: "0.9rem" }}>
-                Site
-              </label>
-              <select
-                className="form-select"
-                value={selectedSiteId}
-                onChange={(e) => {
-                  setSelectedSiteId(e.target.value);
-                  setSelectedMaterialName("");
-                  setSelectedRoute("");
-                }}
-                disabled={!selectedContractorId}
-                required
-              >
-                <option value="">Select Site</option>
-                {sites.map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label" style={{ fontSize: "0.9rem" }}>
-                Material
-              </label>
-              <select
-                name="materialType" // This actually sets the submitted field
-                className="form-select"
-                value={selectedMaterialName}
-                onChange={(e) => {
-                  setSelectedMaterialName(e.target.value);
-                  setSelectedRoute("");
-                }}
-                disabled={!selectedSiteId}
-                required
-              >
-                <option value="">Select Material</option>
-                {/* @ts-ignore */}
-                {siteMaterials.map((name: any) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label" style={{ fontSize: "0.9rem" }}>
-                Route
-              </label>
-              <select
-                className="form-select"
-                value={selectedRoute}
-                onChange={(e) => setSelectedRoute(e.target.value)}
-                disabled={!selectedMaterialName}
-                required
-              >
-                <option value="">Select Route</option>
-                {/* @ts-ignore */}
-                {materialRoutes.map((m: any) => (
-                  <option
-                    key={m.id}
-                    value={`${m.locationFrom}|${m.locationTo}`}
-                  >
-                    {m.locationFrom} &rarr; {m.locationTo}
-                  </option>
-                ))}
-              </select>
-            </div>
+            )}
           </div>
-        )}
+
+          {!trip && (
+            <>
+              <div>
+                <label className="form-label" style={{ fontSize: "0.9rem" }}>
+                  Site
+                </label>
+                <select
+                  className="form-select"
+                  value={selectedSiteId}
+                  onChange={(e) => {
+                    setSelectedSiteId(e.target.value);
+                    setSelectedMaterialName("");
+                    setSelectedRoute("");
+                  }}
+                  disabled={!selectedContractorId}
+                  required
+                >
+                  <option value="">Select Site</option>
+                  {sites.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "0.9rem" }}>
+                  Material
+                </label>
+                <select
+                  name="materialType" // This actually sets the submitted field
+                  className="form-select"
+                  value={selectedMaterialName}
+                  onChange={(e) => {
+                    setSelectedMaterialName(e.target.value);
+                    setSelectedRoute("");
+                  }}
+                  disabled={!selectedSiteId}
+                  required
+                >
+                  <option value="">Select Material</option>
+                  {/* @ts-ignore */}
+                  {siteMaterials.map((name: any) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "0.9rem" }}>
+                  Route
+                </label>
+                <select
+                  className="form-select"
+                  value={selectedRoute}
+                  onChange={(e) => setSelectedRoute(e.target.value)}
+                  disabled={!selectedMaterialName}
+                  required
+                >
+                  <option value="">Select Route</option>
+                  {/* @ts-ignore */}
+                  {materialRoutes.map((m: any) => (
+                    <option
+                      key={m.id}
+                      value={`${m.locationFrom}|${m.locationTo}`}
+                    >
+                      {m.locationFrom} &rarr; {m.locationTo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Hidden/Explicit Inputs for From/To */}
@@ -348,6 +368,8 @@ export default function AdminTripForm({
 
       <div className="form-group">
         <label className="form-label">Date</label>
+        {/* Explicit Contractor ID Input (for submission) */}
+        <input type="hidden" name="contractorId" value={selectedContractorId} />
         <input
           name="date"
           type="date"
@@ -498,6 +520,29 @@ export default function AdminTripForm({
           </p>
         )}
       </div>
+
+      {!trip && (
+        <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+          <label className="form-label">
+            Number of Copies{" "}
+            <span style={{ color: "#666" }}>(Bulk Create)</span>
+          </label>
+          <input
+            type="number"
+            name="tripCount"
+            defaultValue="1"
+            min="1"
+            max="50"
+            className="form-input"
+            required
+          />
+          <p
+            style={{ fontSize: "0.8rem", color: "#666", marginTop: "0.25rem" }}
+          >
+            Create multiple identical trips at once.
+          </p>
+        </div>
+      )}
 
       <div style={{ marginTop: "1.5rem" }}>
         <button

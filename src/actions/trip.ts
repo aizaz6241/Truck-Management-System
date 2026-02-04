@@ -69,6 +69,7 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
     const materialType = formData.get("materialType") as string;
     const weight = formData.get("weight") as string;
     const companySerialNumber = formData.get("companySerialNumber") as string;
+    const contractorIdStr = formData.get("contractorId") as string;
 
     const paperUrls = formData.getAll("paperUrls") as string[];
     const driverId = parseInt(formData.get("driverId") as string);
@@ -93,11 +94,12 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
                 materialType,
                 weight: weight || null,
                 companySerialNumber: companySerialNumber || null,
+                contractorId: contractorIdStr ? parseInt(contractorIdStr) : null,
                 paperImage: paperUrls[0] || null,
                 images: {
                     create: paperUrls.map(url => ({ url }))
                 }
-            }
+            } as any // Cast to any to resolve silly IDE staleness if types aren't synced
         });
 
         const changes: string[] = [];
@@ -121,7 +123,8 @@ export async function updateTrip(id: number, prevState: any, formData: FormData)
             actorRole: session.user.role,
         });
     } catch (e) {
-        return { message: "Failed to update trip" };
+        console.error("Update Trip Error:", e);
+        return { message: "Failed to update trip: " + (e as Error).message };
     }
 
     revalidatePath("/admin/trips");
@@ -163,6 +166,8 @@ export async function createTrip(prevState: any, formData: FormData) {
 
     const paperUrls = formData.getAll("paperUrls") as string[];
 
+    const tripCount = parseInt(formData.get("tripCount") as string) || 1;
+
     if (!fromLocation || !toLocation || !dateStr || !vehicleIdStr) {
         return { message: "All fields are required" };
     }
@@ -171,36 +176,41 @@ export async function createTrip(prevState: any, formData: FormData) {
     const vehicleId = parseInt(vehicleIdStr);
 
     try {
-        const trip = await prisma.trip.create({
-            data: {
-                driverId,
-                vehicleId,
-                serialNumber: serialNumber || null,
-                fromLocation,
-                toLocation,
-                date: combinedDateTime,
-                materialType,
-                weight: weight || null,
-                companySerialNumber: companySerialNumber || null,
-                paperImage: paperUrls[0] || null,
-                images: {
-                    create: paperUrls.map(url => ({ url }))
-                }
-            },
+        await prisma.$transaction(async (tx) => {
+            for (let i = 0; i < tripCount; i++) {
+                const trip = await tx.trip.create({
+                    data: {
+                        driverId,
+                        vehicleId,
+                        serialNumber: serialNumber || null,
+                        fromLocation,
+                        toLocation,
+                        date: combinedDateTime,
+                        materialType,
+                        weight: weight || null,
+                        companySerialNumber: companySerialNumber || null,
+                        paperImage: paperUrls[0] || null,
+                        images: {
+                            create: paperUrls.map(url => ({ url }))
+                        }
+                    } as any,
+                });
+
+                await logActivity({
+                    action: "CREATE",
+                    entity: "TRIP",
+                    entityId: trip.id,
+                    details: `Created new trip (From: ${fromLocation}, To: ${toLocation}) ${tripCount > 1 ? `[Copy ${i + 1}/${tripCount}]` : ''}`,
+                    actorId: session.user.id,
+                    actorName: session.user.name || "Unknown",
+                    actorRole: session.user.role,
+                });
+            }
         });
 
-        await logActivity({
-            action: "CREATE",
-            entity: "TRIP",
-            entityId: trip.id,
-            details: `Created new trip (From: ${fromLocation}, To: ${toLocation})`,
-            actorId: session.user.id,
-            actorName: session.user.name || "Unknown",
-            actorRole: session.user.role,
-        });
     } catch (e) {
         console.error(e);
-        return { message: "Failed to save trip" };
+        return { message: "Failed to save trip(s)" };
     }
 
     if (isAdmin) {
@@ -264,7 +274,27 @@ export async function getTripsByRange(startDate: string, endDate: string, owners
             } : null
         },
         driver: {
-            name: trip.driver.name,
-        },
+            name: trip.driver.name
+        }
     }));
+}
+
+export async function updateTripPaperStatus(id: number, status: string) {
+    const session = await getSession();
+    if (!session || !session.user || (session.user.role !== "ADMIN" && session.user.role !== "DRIVER")) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await prisma.trip.update({
+            where: { id },
+            data: { paperStatus: status }
+        });
+
+        revalidatePath("/admin/trips");
+        return { message: "Status updated" };
+    } catch (e) {
+        console.error("Failed to update paper status:", e);
+        return { message: "Failed to update status" };
+    }
 }

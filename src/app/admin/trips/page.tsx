@@ -4,6 +4,12 @@ import DeleteTripButton from "@/components/DeleteTripButton";
 import ViewPaperButton from "@/components/ViewPaperButton";
 import TripFilters from "@/components/TripFilters";
 import { Fragment } from "react";
+import {
+  ArrowLongUpIcon,
+  ArrowLongDownIcon,
+  ArrowsUpDownIcon,
+} from "@heroicons/react/24/outline";
+import TripPaperStatus from "@/components/TripPaperStatus";
 
 export default async function TripsPage(props: {
   searchParams: Promise<{
@@ -18,6 +24,9 @@ export default async function TripsPage(props: {
     page?: string;
     month?: string;
     year?: string;
+
+    sort?: string;
+    order?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
@@ -34,6 +43,9 @@ export default async function TripsPage(props: {
   const month = searchParams.month ? parseInt(searchParams.month) : undefined;
   const year = searchParams.year ? parseInt(searchParams.year) : undefined;
   const page = searchParams.page ? parseInt(searchParams.page) : 1;
+  const sort = searchParams.sort || "date";
+  const order = searchParams.order === "asc" ? "asc" : "desc";
+
   const pageSize = 100;
 
   const contractorId = searchParams.contractorId
@@ -79,7 +91,6 @@ export default async function TripsPage(props: {
   if (materialType) where.materialType = { contains: materialType }; // Partial match
   if (ownership) where.vehicle = { ownership: ownership };
   if (serialNumber) where.serialNumber = { contains: serialNumber }; // Partial match
-
   if (contractorId) {
     // Complex filter: Trip can be linked via Invoice OR via Route
     // Prisma doesn't support advanced OR across relations and non-relations comfortably in one object without complex syntax.
@@ -131,10 +142,53 @@ export default async function TripsPage(props: {
     }
   }
 
+  // Helper to build sort links
+  const getSortLink = (field: string) => {
+    const isCurrentSort = sort === field;
+    const newOrder = isCurrentSort && order === "asc" ? "desc" : "asc";
+    const params = new URLSearchParams();
+    if (driverId) params.set("driverId", driverId.toString());
+    if (vehicleId) params.set("vehicleId", vehicleId.toString());
+    if (date) params.set("date", date);
+    if (materialType) params.set("materialType", materialType);
+    if (ownership) params.set("ownership", ownership);
+    if (serialNumber) params.set("serialNumber", serialNumber);
+    if (contractorId) params.set("contractorId", contractorId.toString());
+    if (year) params.set("year", year.toString());
+    if (month) params.set("month", month.toString());
+    if (page > 1) params.set("page", page.toString());
+
+    params.set("sort", field);
+    params.set("order", newOrder);
+
+    return `?${params.toString()}`;
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sort !== field)
+      return <ArrowsUpDownIcon style={{ width: "14px", marginLeft: "4px" }} />;
+    return order === "asc" ? (
+      <ArrowLongUpIcon style={{ width: "14px", marginLeft: "4px" }} />
+    ) : (
+      <ArrowLongDownIcon style={{ width: "14px", marginLeft: "4px" }} />
+    );
+  };
+
+  // Determine OrderBy
+  let orderBy: any = { date: "desc" };
+  if (sort === "driver") {
+    // Primary sort by Date (to keep grouping clean), Secondary by Driver
+    orderBy = [{ date: "desc" }, { driver: { name: order } }];
+  } else if (sort === "contractor") {
+    orderBy = [{ date: "desc" }, { contractor: { name: order } }];
+  } else if (sort === "date") {
+    orderBy = { date: order };
+  }
+
   const totalTrips = await prisma.trip.count({ where });
   const totalPages = Math.ceil(totalTrips / pageSize);
 
-  const trips = await prisma.trip.findMany({
+  const trips = (await prisma.trip.findMany({
     where,
     take: pageSize,
     skip: (page - 1) * pageSize,
@@ -142,14 +196,15 @@ export default async function TripsPage(props: {
       driver: true,
       vehicle: true,
       images: true,
+      contractor: true, // Included Explicit Contractor
       invoice: { include: { contractor: true } },
-    }, // Included Invoice & Contractor
-    orderBy: { date: "desc" },
-  });
+    } as any, // Included Invoice & Contractor
+    orderBy,
+  })) as any;
 
-  // Grouping by Date (Partitioning)
+  // Grouping by Date (Partitioning) - Always active to satisfy "Separated by Date" requirement
   const groupedTrips: { [key: string]: typeof trips } = {};
-  trips.forEach((trip) => {
+  trips.forEach((trip: any) => {
     const dateKey = new Date(trip.date).toDateString();
     if (!groupedTrips[dateKey]) groupedTrips[dateKey] = [];
     groupedTrips[dateKey].push(trip);
@@ -223,7 +278,18 @@ export default async function TripsPage(props: {
                   borderBottom: "1px solid var(--border-color)",
                 }}
               >
-                Date
+                <Link
+                  href={getSortLink("date")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    color: "inherit",
+                    textDecoration: "none",
+                  }}
+                >
+                  Date {getSortIcon("date")}
+                </Link>
               </th>
               <th
                 style={{
@@ -231,7 +297,18 @@ export default async function TripsPage(props: {
                   borderBottom: "1px solid var(--border-color)",
                 }}
               >
-                Driver
+                <Link
+                  href={getSortLink("driver")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    color: "inherit",
+                    textDecoration: "none",
+                  }}
+                >
+                  Driver {getSortIcon("driver")}
+                </Link>
               </th>
               <th
                 style={{
@@ -255,7 +332,18 @@ export default async function TripsPage(props: {
                   borderBottom: "1px solid var(--border-color)",
                 }}
               >
-                Contractor
+                <Link
+                  href={getSortLink("contractor")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    color: "inherit",
+                    textDecoration: "none",
+                  }}
+                >
+                  Contractor {getSortIcon("contractor")}
+                </Link>
               </th>
               <th
                 style={{
@@ -295,22 +383,30 @@ export default async function TripsPage(props: {
                   borderBottom: "1px solid var(--border-color)",
                 }}
               >
+                Paper Status
+              </th>
+              <th
+                style={{
+                  padding: "1rem",
+                  borderBottom: "1px solid var(--border-color)",
+                }}
+              >
                 Actions
               </th>
             </tr>
           </thead>
           <tbody>
-            {Object.entries(groupedTrips).map(([dateKey, groupTrips]) => (
-              <Fragment key={dateKey}>
+            {Object.entries(groupedTrips).map(([groupTitle, groupTrips]) => (
+              <Fragment key={groupTitle}>
                 <tr style={{ backgroundColor: "#e9ecef" }}>
                   <td
                     colSpan={11}
                     style={{ padding: "0.5rem 1rem", fontWeight: "bold" }}
                   >
-                    {dateKey}
+                    {groupTitle}
                   </td>
                 </tr>
-                {groupTrips.map((trip) => (
+                {groupTrips.map((trip: any) => (
                   <tr key={trip.id}>
                     <td
                       style={{
@@ -382,7 +478,8 @@ export default async function TripsPage(props: {
                         fontSize: "0.875rem",
                       }}
                     >
-                      {trip.invoice?.contractor?.name ||
+                      {trip.contractor?.name ||
+                        trip.invoice?.contractor?.name ||
                         routeContractorMap[
                           `${trip.fromLocation}|${trip.toLocation}`
                         ]?.name ||
@@ -426,11 +523,22 @@ export default async function TripsPage(props: {
                           imageUrl={
                             trip.paperImage || trip.images[0]?.url || ""
                           }
-                          images={trip.images.map((i) => i.url)}
+                          images={trip.images.map((i: any) => i.url)}
                         />
                       ) : (
                         "-"
                       )}
+                    </td>
+                    <td
+                      style={{
+                        padding: "1rem",
+                        borderBottom: "1px solid var(--border-color)",
+                      }}
+                    >
+                      <TripPaperStatus
+                        id={trip.id}
+                        initialStatus={trip.paperStatus}
+                      />
                     </td>
                     <td
                       style={{
@@ -484,7 +592,7 @@ export default async function TripsPage(props: {
           }}
         >
           <Link
-            href={`/admin/trips?page=1&driverId=${driverId || ""}&vehicleId=${vehicleId || ""}&date=${date || ""}&year=${year || ""}&month=${month || ""}&materialType=${materialType || ""}&ownership=${ownership || ""}`}
+            href={`/admin/trips?page=1&driverId=${driverId || ""}&vehicleId=${vehicleId || ""}&date=${date || ""}&year=${year || ""}&month=${month || ""}&materialType=${materialType || ""}&ownership=${ownership || ""}&sort=${sort}&order=${order}`}
             className={`btn ${page <= 1 ? "disabled" : ""}`}
             style={{
               pointerEvents: page <= 1 ? "none" : "auto",
@@ -494,7 +602,7 @@ export default async function TripsPage(props: {
             First
           </Link>
           <Link
-            href={`/admin/trips?page=${page - 1}&driverId=${driverId || ""}&vehicleId=${vehicleId || ""}&date=${date || ""}&year=${year || ""}&month=${month || ""}&materialType=${materialType || ""}&ownership=${ownership || ""}`}
+            href={`/admin/trips?page=${page - 1}&driverId=${driverId || ""}&vehicleId=${vehicleId || ""}&date=${date || ""}&year=${year || ""}&month=${month || ""}&materialType=${materialType || ""}&ownership=${ownership || ""}&sort=${sort}&order=${order}`}
             className={`btn ${page <= 1 ? "disabled" : ""}`}
             style={{
               pointerEvents: page <= 1 ? "none" : "auto",
@@ -516,7 +624,7 @@ export default async function TripsPage(props: {
           </span>
 
           <Link
-            href={`/admin/trips?page=${page + 1}&driverId=${driverId || ""}&vehicleId=${vehicleId || ""}&date=${date || ""}&year=${year || ""}&month=${month || ""}&materialType=${materialType || ""}&ownership=${ownership || ""}`}
+            href={`/admin/trips?page=${page + 1}&driverId=${driverId || ""}&vehicleId=${vehicleId || ""}&date=${date || ""}&year=${year || ""}&month=${month || ""}&materialType=${materialType || ""}&ownership=${ownership || ""}&sort=${sort}&order=${order}`}
             className={`btn ${page >= totalPages ? "disabled" : ""}`}
             style={{
               pointerEvents: page >= totalPages ? "none" : "auto",

@@ -67,10 +67,13 @@ model Trip {
   serialNumber        String?
   companySerialNumber String?
   weight              String?
+  contractorId        Int?
   driver              User        @relation(fields: [driverId], references: [id], onDelete: Cascade)
   invoice             Invoice?    @relation(fields: [invoiceId], references: [id])
   vehicle             Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  contractor          Contractor? @relation(fields: [contractorId], references: [id])
   images              TripImage[]
+  paperStatus         String      @default("Not Handed")
 }
 
 model TripImage {
@@ -146,6 +149,7 @@ model Contractor {
   invoices          Invoice[]
   sites             Site[]
   statements        Statement[]
+  trips             Trip[]
 }
 
 model ContractorMaterial {

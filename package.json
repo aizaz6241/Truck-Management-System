@@ -7,7 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate && prisma db push"
+    "postinstall": "prisma generate && prisma db push",
+    "backup": "npx tsx scripts/backup.ts",
+    "restore": "npx tsx scripts/restore.ts",
+    "db:push:dev": "dotenv -e .env.development -- prisma db push",
+    "db:push:prod": "dotenv -e .env.production -- prisma db push",
+    "studio:dev": "dotenv -e .env.development -- prisma studio",
+    "studio:prod": "dotenv -e .env.production -- prisma studio",
+    "generate:dev": "dotenv -e .env.development -- prisma generate",
+    "generate:prod": "dotenv -e .env.production -- prisma generate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -37,6 +45,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.23",
     "babel-plugin-react-compiler": "1.0.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "postcss": "^8.5.6",

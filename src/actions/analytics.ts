@@ -1029,9 +1029,12 @@ export async function getContractorTripStats(
     endDate.setHours(23, 59, 59, 999);
   }
 
-  // 1. Build Material Map & Route Map
+  // 1. Build Material Map & Route Maps
   // MaterialMap: Material|From|To -> ContractorName
   // RouteMap: From|To -> Set<ContractorName>
+  // MatToMap: Material|To -> Set<ContractorName>
+  // MatFromMap: Material|From -> Set<ContractorName>
+  
   const siteMaterials = await prisma.siteMaterial.findMany({
     include: {
       site: {
@@ -1044,6 +1047,8 @@ export async function getContractorTripStats(
 
   const materialMap: { [key: string]: string } = {};
   const routeMap: { [key: string]: Set<string> } = {};
+  const matToMap: { [key: string]: Set<string> } = {};
+  const matFromMap: { [key: string]: Set<string> } = {};
 
   siteMaterials.forEach((sm) => {
     if (sm.site && sm.site.contractor) {
@@ -1058,10 +1063,18 @@ export async function getContractorTripStats(
 
       // Route Fallback Key
       const routeKey = `${normalizedFrom}|${normalizedTo}`;
-      if (!routeMap[routeKey]) {
-        routeMap[routeKey] = new Set();
-      }
+      if (!routeMap[routeKey]) routeMap[routeKey] = new Set();
       routeMap[routeKey].add(contractorName);
+
+      // Material + To Fallback
+      const matToKey = `${normalizedMat}|${normalizedTo}`;
+      if (!matToMap[matToKey]) matToMap[matToKey] = new Set();
+      matToMap[matToKey].add(contractorName);
+
+       // Material + From Fallback
+      const matFromKey = `${normalizedMat}|${normalizedFrom}`;
+      if (!matFromMap[matFromKey]) matFromMap[matFromKey] = new Set();
+      matFromMap[matFromKey].add(contractorName);
     }
   });
 
@@ -1088,8 +1101,14 @@ export async function getContractorTripStats(
   trips.forEach((trip) => {
     let contractorName = "Unknown";
 
+    // Priority 0: Explicit Contractor Assignment (Manual Override)
+    // @ts-ignore
+    if (trip.contractor && trip.contractor.name) {
+       // @ts-ignore
+       contractorName = trip.contractor.name;
+    }
     // Priority 1: Invoice
-    if (trip.invoice && trip.invoice.contractor) {
+    else if (trip.invoice && trip.invoice.contractor) {
       contractorName = trip.invoice.contractor.name;
     }
     // Priority 2: Material Map (Exact Match)
@@ -1109,6 +1128,20 @@ export async function getContractorTripStats(
           const contractors = routeMap[routeKey];
           if (contractors && contractors.size === 1) {
               contractorName = Array.from(contractors)[0];
+          } else {
+             // Priority 4: Mat + To Fallback
+             const matToKey = `${normalizedMat}|${normalizedTo}`;
+             const matToContractors = matToMap[matToKey];
+             if (matToContractors && matToContractors.size === 1) {
+                  contractorName = Array.from(matToContractors)[0];
+             } else {
+                 // Priority 5: Mat + From Fallback
+                 const matFromKey = `${normalizedMat}|${normalizedFrom}`;
+                 const matFromContractors = matFromMap[matFromKey];
+                 if (matFromContractors && matFromContractors.size === 1) {
+                      contractorName = Array.from(matFromContractors)[0];
+                 }
+             }
           }
       }
     }

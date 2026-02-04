@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+export const dynamic = "force-dynamic";
 import VehicleForm from "@/components/VehicleForm";
 import { notFound } from "next/navigation";
 

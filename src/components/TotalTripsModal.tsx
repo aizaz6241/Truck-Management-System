@@ -200,6 +200,8 @@ export default function TotalTripsModal({
   } = {};
 
   tripsData.forEach((trip) => {
+    if (!trip.vehicle) return; // Safety check
+
     const vNo = trip.vehicle.number;
     if (!groupedTrips[vNo]) {
       let ownerName = "-";
@@ -214,7 +216,7 @@ export default function TotalTripsModal({
 
       groupedTrips[vNo] = {
         vehicleNo: vNo,
-        driverName: trip.driver.name,
+        driverName: trip.driver?.name || "Unknown Driver",
         ownership: trip.vehicle.ownership,
         ownerName: ownerName,
         count: 0,

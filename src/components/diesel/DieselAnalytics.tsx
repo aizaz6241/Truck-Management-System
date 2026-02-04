@@ -165,100 +165,106 @@ export default function DieselAnalytics() {
         {/* Trend Chart */}
         <div className="diesel-chart-box">
           <h4 className="diesel-chart-title">Consumption Trend (Liters)</h4>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={stats.trend}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="colorLiters" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#d97706" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="#eee"
-              />
-              <XAxis
-                dataKey="date"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-                tickFormatter={(val) => {
-                  const d = new Date(val);
-                  return `${d.getDate()}/${d.getMonth() + 1}`;
-                }}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "none",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                }}
-                labelFormatter={(label) => new Date(label).toDateString()}
-              />
-              <Area
-                type="monotone"
-                dataKey="liters"
-                stroke="#d97706"
-                fillOpacity={1}
-                fill="url(#colorLiters)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={stats.trend}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorLiters" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#d97706" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#eee"
+                />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                  tickFormatter={(val) => {
+                    const d = new Date(val);
+                    return `${d.getDate()}/${d.getMonth() + 1}`;
+                  }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "none",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                  labelFormatter={(label) => new Date(label).toDateString()}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="liters"
+                  stroke="#d97706"
+                  fillOpacity={1}
+                  fill="url(#colorLiters)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Vehicle Wise Chart */}
         <div className="diesel-chart-box">
           <h4 className="diesel-chart-title">Vehicle Wise Consumption</h4>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              layout="vertical"
-              data={stats.vehicleStats}
-              margin={{ top: 0, right: 30, left: 40, bottom: 5 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                horizontal={false}
-                stroke="#eee"
-              />
-              <XAxis type="number" hide />
-              <YAxis
-                dataKey="vehicle"
-                type="category"
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-                width={80}
-              />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "none",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                }}
-              />
-              <Bar
-                dataKey="liters"
-                name="Liters"
-                radius={[0, 4, 4, 0]}
-                barSize={20}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={stats.vehicleStats}
+                margin={{ top: 0, right: 30, left: 40, bottom: 5 }}
+                barCategoryGap="20%"
               >
-                {stats.vehicleStats.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal={false}
+                  stroke="#eee"
+                />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="vehicle"
+                  type="category"
+                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                  width={100}
+                  interval={0}
+                />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "none",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Bar
+                  dataKey="liters"
+                  name="Liters"
+                  radius={[0, 4, 4, 0]}
+                  barSize={32}
+                >
+                  {stats.vehicleStats.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

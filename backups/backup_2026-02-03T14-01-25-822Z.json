@@ -1,0 +1,18 @@
+{
+  "users": [],
+  "contractors": [],
+  "sites": [],
+  "siteMaterials": [],
+  "vehicles": [],
+  "taxiOwners": [],
+  "invoices": [],
+  "trips": [],
+  "tripImages": [],
+  "payments": [],
+  "diesels": [],
+  "statements": [],
+  "contractorMaterials": [],
+  "contractorDocuments": [],
+  "activityLogs": [],
+  "dismissedNotifications": []
+}

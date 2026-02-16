@@ -7,7 +7,7 @@ import {
   BanknotesIcon,
   FunnelIcon,
 } from "@heroicons/react/24/solid";
-import DieselStatsOverview from "@/components/diesel/DieselStatsOverview";
+import DieselAnalytics from "@/components/diesel/DieselAnalytics";
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +39,8 @@ export default async function DieselPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <DieselStatsOverview stats={stats} records={records} />
+      {/* Analytics Charts */}
+      <DieselAnalytics records={records} />
 
       {/* Main Content */}
       <DieselList initialData={records} vehicles={vehicles} drivers={drivers} />

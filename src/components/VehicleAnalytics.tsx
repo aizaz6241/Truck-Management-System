@@ -6,26 +6,20 @@ import {
   Pie,
   Cell,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend,
 } from "recharts";
-import { Droplet, DollarSign } from "lucide-react";
 
-interface DieselAnalyticsProps {
-  records: {
+interface VehicleAnalyticsProps {
+  vehicles: {
     id: number;
-    date: Date | string;
-    liters: number;
-    totalAmount: number;
-    vehicle?: {
-      id: number;
-      number: string;
-    } | null;
+    number: string;
+    trips: { date: Date | string }[];
   }[];
 }
 
@@ -42,10 +36,10 @@ const COLORS = [
   "#d0ed57",
 ];
 
-export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
+export default function VehicleAnalytics({ vehicles }: VehicleAnalyticsProps) {
   const [filterType, setFilterType] = useState<
     "all" | "7d" | "30d" | "date" | "month" | "year" | "range"
-  >("30d");
+  >("all");
   const [customDate, setCustomDate] = useState("");
   const [customMonth, setCustomMonth] = useState("");
   const [customYear, setCustomYear] = useState("");
@@ -55,57 +49,43 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
     "all",
   );
 
-  // Extract unique vehicles from records for the dropdown
-  const vehicles = useMemo(() => {
-    const uniqueVehicles: { id: number; number: string }[] = [];
-    const seenIds = new Set();
-    records.forEach((r) => {
-      if (r.vehicle && !seenIds.has(r.vehicle.id)) {
-        seenIds.add(r.vehicle.id);
-        uniqueVehicles.push(r.vehicle);
-      }
-    });
-    return uniqueVehicles.sort((a, b) => a.number.localeCompare(b.number));
-  }, [records]);
-
-  const filterRecords = (data: typeof records) => {
-    if (filterType === "all") return data;
+  const filterTrips = (trips: { date: Date | string }[]) => {
+    if (filterType === "all") return trips;
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    return data.filter((r) => {
-      const recordDate = new Date(r.date);
-      recordDate.setHours(0, 0, 0, 0);
+    return trips.filter((t) => {
+      const tripDate = new Date(t.date);
+      tripDate.setHours(0, 0, 0, 0);
 
       switch (filterType) {
         case "7d": {
           const sevenDaysAgo = new Date(today);
           sevenDaysAgo.setDate(today.getDate() - 7);
-          return recordDate >= sevenDaysAgo && recordDate <= today;
+          return tripDate >= sevenDaysAgo && tripDate <= today;
         }
         case "30d": {
           const thirtyDaysAgo = new Date(today);
           thirtyDaysAgo.setDate(today.getDate() - 30);
-          return recordDate >= thirtyDaysAgo && recordDate <= today;
+          return tripDate >= thirtyDaysAgo && tripDate <= today;
         }
         case "date": {
           if (!customDate) return true;
           return (
-            recordDate.getTime() === new Date(customDate).setHours(0, 0, 0, 0)
+            tripDate.getTime() === new Date(customDate).setHours(0, 0, 0, 0)
           );
         }
         case "month": {
           if (!customMonth) return true;
           const [year, month] = customMonth.split("-").map(Number);
           return (
-            recordDate.getFullYear() === year &&
-            recordDate.getMonth() === month - 1
+            tripDate.getFullYear() === year && tripDate.getMonth() === month - 1
           );
         }
         case "year": {
           if (!customYear) return true;
-          return recordDate.getFullYear().toString() === customYear;
+          return tripDate.getFullYear().toString() === customYear;
         }
         case "range": {
           if (!startDate || !endDate) return true;
@@ -113,7 +93,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
           start.setHours(0, 0, 0, 0);
           const end = new Date(endDate);
           end.setHours(0, 0, 0, 0);
-          return recordDate >= start && recordDate <= end;
+          return tripDate >= start && tripDate <= end;
         }
         default:
           return true;
@@ -121,48 +101,16 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
     });
   };
 
-  const filteredRecordsForStats = useMemo(() => {
-    return filterRecords(records); // Apply time filter only
-  }, [
-    records,
-    filterType,
-    customDate,
-    customMonth,
-    customYear,
-    startDate,
-    endDate,
-  ]);
-
-  const totalLiters = useMemo(() => {
-    return filteredRecordsForStats.reduce((sum, r) => sum + r.liters, 0);
-  }, [filteredRecordsForStats]);
-
-  const totalCost = useMemo(() => {
-    return filteredRecordsForStats.reduce((sum, r) => sum + r.totalAmount, 0);
-  }, [filteredRecordsForStats]);
-
-  // Pie Chart Data: Total Liters by Vehicle
+  // Pie Chart Data: Total Trips by Vehicle
   const pieData = useMemo(() => {
-    const filtered = filterRecords(records);
-    const consumptionByVehicle: Record<string, number> = {};
-
-    filtered.forEach((r) => {
-      if (r.vehicle) {
-        const name = r.vehicle.number;
-        consumptionByVehicle[name] =
-          (consumptionByVehicle[name] || 0) + r.liters;
-      }
-    });
-
-    return Object.keys(consumptionByVehicle)
-      .map((name) => ({
-        name,
-        value: Number(consumptionByVehicle[name].toFixed(2)),
+    return vehicles
+      .map((v) => ({
+        name: v.number,
+        value: filterTrips(v.trips).length,
       }))
-      .sort((a, b) => b.value - a.value)
       .filter((d) => d.value > 0);
   }, [
-    records,
+    vehicles,
     filterType,
     customDate,
     customMonth,
@@ -171,17 +119,24 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
     endDate,
   ]);
 
-  // Line Chart Data: Consumption Trend
+  // Line Chart Data: Dynamic Aggregation (Daily vs Monthly)
   const lineData = useMemo(() => {
-    let filtered = records;
+    let filteredTrips: { date: Date | string }[] = [];
 
-    if (selectedVehicleId !== "all") {
-      filtered = filtered.filter(
-        (r) => r.vehicle && r.vehicle.id === selectedVehicleId,
-      );
+    if (selectedVehicleId === "all") {
+      // Aggregate all trips
+      vehicles.forEach((v) => {
+        filteredTrips = [...filteredTrips, ...v.trips];
+      });
+    } else {
+      const vehicle = vehicles.find((v) => v.id === selectedVehicleId);
+      if (vehicle) {
+        filteredTrips = vehicle.trips;
+      }
     }
 
-    filtered = filterRecords(filtered);
+    // Apply Date Filter
+    filteredTrips = filterTrips(filteredTrips);
 
     // Determine Aggregation Type
     let aggregationType: "daily" | "monthly" = "monthly";
@@ -194,6 +149,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
         const end = new Date(endDate);
         const diffTime = Math.abs(end.getTime() - start.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // If range is 60 days or less, show daily
         if (diffDays <= 60) {
           aggregationType = "daily";
         }
@@ -201,22 +157,24 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
     }
 
     // Group Data
-    const groupedData: Record<string, number> = {};
+    const tripsByPeriod: Record<string, number> = {};
 
-    filtered.forEach((r) => {
-      const date = new Date(r.date);
+    filteredTrips.forEach((trip) => {
+      const date = new Date(trip.date);
       let key = "";
 
       if (aggregationType === "daily") {
+        // Format: YYYY-MM-DD for sorting/grouping, display can be formatted later
         key = date.toISOString().split("T")[0];
       } else {
+        // Format: Mon YYYY
         key = `${date.toLocaleString("default", { month: "short" })} ${date.getFullYear()}`;
       }
 
-      groupedData[key] = (groupedData[key] || 0) + r.liters;
+      tripsByPeriod[key] = (tripsByPeriod[key] || 0) + 1;
     });
 
-    return Object.keys(groupedData)
+    return Object.keys(tripsByPeriod)
       .map((key) => {
         let timestamp = 0;
         let displayName = key;
@@ -228,7 +186,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
           displayName = dateObj.toLocaleDateString("default", {
             month: "short",
             day: "numeric",
-          });
+          }); // e.g., "Oct 25"
         } else {
           const [month, year] = key.split(" ");
           const dateObj = new Date(`${month} 1, ${year}`);
@@ -237,14 +195,15 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
         }
 
         return {
-          name: displayName,
-          liters: Number(groupedData[key].toFixed(2)),
+          name: displayName, // Display on X-Axis
+          originalKey: key, // For debugging/sorting consistency if needed
+          trips: tripsByPeriod[key],
           timestamp: timestamp,
         };
       })
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [
-    records,
+    vehicles,
     selectedVehicleId,
     filterType,
     customDate,
@@ -359,96 +318,6 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "1.5rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        {/* Total Liters Card */}
-        <div
-          className="card"
-          style={{
-            padding: "1.5rem",
-            backgroundColor: "white",
-            borderRadius: "0.5rem",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
-          <div
-            style={{
-              padding: "0.75rem",
-              borderRadius: "9999px",
-              backgroundColor: "#fff7ed",
-              color: "#d97706",
-            }}
-          >
-            <Droplet size={24} />
-          </div>
-          <div>
-            <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>
-              Total Consumption
-            </p>
-            <p
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: "bold",
-                color: "#1f2937",
-                margin: 0,
-              }}
-            >
-              {totalLiters.toFixed(2)} L
-            </p>
-          </div>
-        </div>
-
-        {/* Total Cost Card */}
-        <div
-          className="card"
-          style={{
-            padding: "1.5rem",
-            backgroundColor: "white",
-            borderRadius: "0.5rem",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
-          <div
-            style={{
-              padding: "0.75rem",
-              borderRadius: "9999px",
-              backgroundColor: "#ecfdf5",
-              color: "#059669",
-            }}
-          >
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>
-              Total Cost
-            </p>
-            <p
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: "bold",
-                color: "#1f2937",
-                margin: 0,
-              }}
-            >
-              AED {totalCost.toFixed(2)}
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div
         style={{
           display: "grid",
@@ -457,6 +326,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
         }}
       >
         {/* Pie Chart Section */}
+        {/* Pie Chart Section - Flex Layout for Side Legend */}
         <div
           className="card"
           style={{
@@ -475,7 +345,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
               color: "#1f2937",
             }}
           >
-            Fuel Consumption by Vehicle
+            Fleet Trip Distribution
           </h3>
 
           <div
@@ -511,7 +381,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
                   </Pie>
                   <Tooltip
                     formatter={(value: number | undefined, name: any) => [
-                      `${value ?? 0} Liters`,
+                      `${value ?? 0} trips`,
                       name,
                     ]}
                   />
@@ -552,7 +422,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
                     />
                     <span style={{ fontWeight: 500 }}>{entry.name}:</span>
                     <span style={{ marginLeft: "0.5rem", color: "#6b7280" }}>
-                      {entry.value} L
+                      {entry.value} Trips
                     </span>
                   </li>
                 ))}
@@ -580,7 +450,7 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
             }}
           >
             <h3 style={{ margin: 0, fontSize: "1.25rem", color: "#1f2937" }}>
-              Consumption Trend
+              Performance Over Time
             </h3>
             <select
               value={selectedVehicleId}
@@ -618,17 +488,11 @@ export default function DieselAnalytics({ records }: DieselAnalyticsProps) {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip
-                  formatter={(value: number | undefined) => [
-                    `${value ?? 0} Liters`,
-                    "Consumption",
-                  ]}
-                />
+                <Tooltip />
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="liters"
-                  name="Liters"
+                  dataKey="trips"
                   stroke="#8884d8"
                   activeDot={{ r: 8 }}
                   strokeWidth={2}

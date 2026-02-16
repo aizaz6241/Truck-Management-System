@@ -275,7 +275,9 @@ export async function getTripsByRange(startDate: string, endDate: string, owners
         },
         driver: {
             name: trip.driver.name
-        }
+        },
+        weight: trip.weight,
+        companySerialNumber: trip.companySerialNumber
     }));
 }
 

@@ -30,6 +30,8 @@ interface Trip {
   driver: {
     name: string;
   };
+  weight?: string | null;
+  companySerialNumber?: string | null;
 }
 
 interface TotalTripsModalProps {
@@ -195,7 +197,11 @@ export default function TotalTripsModal({
       ownership: string;
       ownerName: string;
       count: number;
-      routes: string[];
+      trips: {
+        route: string;
+        weight?: string | null;
+        companySerialNumber?: string | null;
+      }[];
     };
   } = {};
 
@@ -220,11 +226,15 @@ export default function TotalTripsModal({
         ownership: trip.vehicle.ownership,
         ownerName: ownerName,
         count: 0,
-        routes: [],
+        trips: [],
       };
     }
     groupedTrips[vNo].count += 1;
-    groupedTrips[vNo].routes.push(`${trip.fromLocation} → ${trip.toLocation}`);
+    groupedTrips[vNo].trips.push({
+      route: `${trip.fromLocation} → ${trip.toLocation}`,
+      weight: trip.weight,
+      companySerialNumber: trip.companySerialNumber,
+    });
   });
 
   const tableData = Object.values(groupedTrips);
@@ -267,7 +277,7 @@ export default function TotalTripsModal({
           position: "relative",
           zIndex: 100000,
           width: "100%",
-          maxWidth: "1200px",
+          maxWidth: "1400px",
           backgroundColor: "white",
           borderRadius: "12px",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -626,7 +636,7 @@ export default function TotalTripsModal({
                           borderBottom: "1px solid #e5e7eb",
                         }}
                       >
-                        Routes Timeline
+                        Trip Details
                       </th>
                     </tr>
                   </thead>
@@ -756,15 +766,15 @@ export default function TotalTripsModal({
                             <div
                               style={{
                                 display: "flex",
-                                flexWrap: "wrap",
+                                flexDirection: "column",
                                 gap: "0.5rem",
                               }}
                             >
-                              {row.routes.map((route, idx) => (
+                              {row.trips.map((trip, idx) => (
                                 <div
                                   key={idx}
                                   style={{
-                                    display: "inline-flex",
+                                    display: "flex",
                                     alignItems: "center",
                                     borderRadius: "0.375rem",
                                     backgroundColor: "#f9fafb",
@@ -773,36 +783,66 @@ export default function TotalTripsModal({
                                     fontWeight: "500",
                                     color: "#374151",
                                     border: "1px solid #e5e7eb",
+                                    justifyContent: "space-between",
+                                    flexWrap: "wrap",
+                                    gap: "0.5rem",
                                   }}
                                 >
-                                  <span
+                                  <div
                                     style={{
-                                      marginRight: "0.375rem",
                                       display: "flex",
-                                      height: "16px",
-                                      width: "16px",
-                                      flexShrink: 0,
                                       alignItems: "center",
-                                      justifyContent: "center",
-                                      borderRadius: "9999px",
-                                      backgroundColor: "#eff6ff",
-                                      fontSize: "10px",
-                                      fontWeight: "700",
-                                      color: "#2563eb",
                                     }}
                                   >
-                                    {idx + 1}
-                                  </span>
-                                  <span
+                                    <span
+                                      style={{
+                                        marginRight: "0.375rem",
+                                        display: "flex",
+                                        height: "16px",
+                                        width: "16px",
+                                        flexShrink: 0,
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        borderRadius: "9999px",
+                                        backgroundColor: "#eff6ff",
+                                        fontSize: "10px",
+                                        fontWeight: "700",
+                                        color: "#2563eb",
+                                      }}
+                                    >
+                                      {idx + 1}
+                                    </span>
+                                    <span
+                                      style={{
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {trip.route}
+                                    </span>
+                                  </div>
+
+                                  <div
                                     style={{
-                                      maxWidth: "200px",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
+                                      display: "flex",
+                                      gap: "1rem",
+                                      color: "#6b7280",
+                                      fontSize: "0.7rem",
                                     }}
                                   >
-                                    {route}
-                                  </span>
+                                    {trip.weight && (
+                                      <span>
+                                        Weight: <strong>{trip.weight}</strong>
+                                      </span>
+                                    )}
+                                    {trip.companySerialNumber && (
+                                      <span>
+                                        SN:{" "}
+                                        <strong>
+                                          {trip.companySerialNumber}
+                                        </strong>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>

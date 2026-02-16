@@ -18,6 +18,19 @@ export default async function AdminDashboard() {
   const { todayTrips, trend7Days, trend30Days, trend1Year } =
     await getAnalyticsData();
 
+  // Fetch Diesel Records for Analytics
+  const dieselRecords = await prisma.diesel.findMany({
+    orderBy: { date: "desc" },
+    include: {
+      vehicle: {
+        select: {
+          id: true,
+          number: true,
+        },
+      },
+    },
+  });
+
   return (
     <div className="container" style={{ marginTop: "2rem" }}>
       <h1>Admin Dashboard</h1>
@@ -275,6 +288,7 @@ export default async function AdminDashboard() {
         trend7Days={trend7Days}
         trend30Days={trend30Days}
         trend1Year={trend1Year}
+        dieselRecords={dieselRecords}
       />
     </div>
   );

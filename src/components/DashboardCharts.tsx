@@ -35,17 +35,21 @@ import TotalTripsModal from "./TotalTripsModal";
 import ContractorTripsPieChart from "./ContractorTripsPieChart";
 import { getContractorTripStats } from "@/actions/analytics";
 
+interface DashboardChartsProps {
+  todayTrips: any[];
+  trend7Days: any[];
+  trend30Days: any[];
+  trend1Year: any[];
+  dieselRecords: any[];
+}
+
 export default function DashboardCharts({
   trend7Days,
   trend30Days,
   trend1Year,
   todayTrips,
-}: {
-  trend7Days: any[];
-  trend30Days: any[];
-  trend1Year: any[];
-  todayTrips: any[];
-}) {
+  dieselRecords,
+}: DashboardChartsProps) {
   const [trendRange, setTrendRange] = useState<"7d" | "30d" | "1y">("7d");
 
   // Pie Chart State
@@ -1018,7 +1022,7 @@ export default function DashboardCharts({
       <RevenueCard />
       <InvoiceAnalytics />
       <TaxiAnalytics />
-      <DieselAnalytics />
+      <DieselAnalytics records={dieselRecords} />
     </div>
   );
 }

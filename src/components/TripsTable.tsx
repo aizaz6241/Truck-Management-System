@@ -56,7 +56,14 @@ export default function TripsTable({
   const groupedTrips = useMemo(() => {
     const groups: { [key: string]: Trip[] } = {};
     trips.forEach((trip) => {
-      const dateKey = new Date(trip.date).toDateString();
+      // Use UTC to prevent timezone shifts
+      const dateKey = new Date(trip.date).toLocaleDateString("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      });
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(trip);
     });

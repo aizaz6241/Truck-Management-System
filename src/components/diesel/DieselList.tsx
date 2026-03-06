@@ -9,7 +9,11 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
+  DocumentArrowDownIcon,
 } from "@heroicons/react/24/outline";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 interface DieselListProps {
   initialData: any[];
@@ -40,6 +44,7 @@ export default function DieselList({
   const [filterOwnership, setFilterOwnership] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const filteredRecords = useMemo(() => {
     return records.filter((record) => {
@@ -110,6 +115,108 @@ export default function DieselList({
   const handleAdd = () => {
     setEditingRecord(null);
     setShowModal(true);
+  };
+
+  // Multiple Selection Logic
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const allVisibleIds = filteredRecords.map((r) => r.id);
+      setSelectedIds(new Set(allVisibleIds));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectRecord = (
+    id: number,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const newSelected = new Set(selectedIds);
+    if (e.target.checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const isAllSelected =
+    filteredRecords.length > 0 && selectedIds.size === filteredRecords.length;
+
+  // Excel Export Logic
+  const handleExportExcel = () => {
+    if (selectedIds.size === 0) {
+      alert("Please select at least one record to export.");
+      return;
+    }
+
+    const recordsToExport = records.filter((r) => selectedIds.has(r.id));
+
+    const data = recordsToExport.map((r) => ({
+      Date: new Date(r.date).toLocaleDateString("en-GB"),
+      Vehicle: r.vehicle.number,
+      Ownership: r.vehicle.ownership,
+      Owner: r.vehicle.ownership === "Taxi" ? r.vehicle.ownerName : "RVT",
+      Driver: r.driver?.name || "Unassigned",
+      Liters: r.liters.toFixed(2),
+      "Price/L": r.pricePerLiter.toFixed(2),
+      Total: `AED ${r.totalAmount.toLocaleString()}`,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Diesel Records");
+    XLSX.writeFile(
+      workbook,
+      `Diesel_Records_${new Date().toISOString().split("T")[0]}.xlsx`,
+    );
+  };
+
+  // PDF Export Logic
+  const handleExportPDF = () => {
+    if (selectedIds.size === 0) {
+      alert("Please select at least one record to export.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Diesel Consumption Report", 14, 22);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Total Records: ${selectedIds.size}`, 14, 35);
+
+    const recordsToExport = records.filter((r) => selectedIds.has(r.id));
+    const tableColumn = [
+      "Date",
+      "Vehicle",
+      "Owner/Ownership",
+      "Driver",
+      "Liters",
+      "Price/L",
+      "Total",
+    ];
+    const tableRows = recordsToExport.map((r) => [
+      new Date(r.date).toLocaleDateString("en-GB"),
+      r.vehicle.number,
+      r.vehicle.ownership === "Taxi" ? `Taxi: ${r.vehicle.ownerName}` : "RVT",
+      r.driver?.name || "-",
+      r.liters.toFixed(2),
+      r.pricePerLiter.toFixed(2),
+      `AED ${r.totalAmount.toLocaleString()}`,
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 40,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [66, 66, 66] },
+    });
+
+    doc.save(`Diesel_Records_${new Date().toISOString().split("T")[0]}.pdf`);
   };
 
   return (
@@ -234,12 +341,58 @@ export default function DieselList({
         </div>
       </div>
 
+      {/* Selection Actions Bar */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+            {selectedIds.size} Records Selected
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportExcel}
+            disabled={selectedIds.size === 0}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              selectedIds.size > 0
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                : "bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
+            }`}
+          >
+            <DocumentArrowDownIcon className="w-4 h-4" />
+            Excel
+          </button>
+          <button
+            onClick={handleExportPDF}
+            disabled={selectedIds.size === 0}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              selectedIds.size > 0
+                ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                : "bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
+            }`}
+          >
+            <DocumentArrowDownIcon className="w-4 h-4" />
+            PDF
+          </button>
+        </div>
+      </div>
+
       {/* Table Container */}
       <div className="diesel-table-container">
         <div className="diesel-table-responsive">
           <table className="diesel-table">
             <thead>
               <tr className="diesel-table-header">
+                <th
+                  className="diesel-table-cell"
+                  style={{ width: "40px", padding: "1.25rem 1rem" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                </th>
                 <th className="diesel-table-cell">Date</th>
                 <th className="diesel-table-cell">Vehicle</th>
                 {!isDriverView && (
@@ -275,7 +428,7 @@ export default function DieselList({
             <tbody className="divide-y divide-gray-100">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={isDriverView ? 6 : 8}>
+                  <td colSpan={isDriverView ? 7 : 9}>
                     <div className="diesel-empty-state">
                       <div className="diesel-empty-icon-wrapper">
                         <MagnifyingGlassIcon className="w-8 h-8 text-gray-300" />
@@ -292,7 +445,23 @@ export default function DieselList({
                 </tr>
               ) : (
                 filteredRecords.map((record) => (
-                  <tr key={record.id} className="diesel-table-row group">
+                  <tr
+                    key={record.id}
+                    className={`diesel-table-row group ${
+                      selectedIds.has(record.id) ? "!bg-amber-50/50" : ""
+                    }`}
+                  >
+                    <td
+                      className="diesel-table-cell"
+                      style={{ padding: "1rem 1rem" }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(record.id)}
+                        onChange={(e) => handleSelectRecord(record.id, e)}
+                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="diesel-table-cell date">
                       {new Date(record.date).toLocaleDateString("en-GB", {
                         year: "numeric",

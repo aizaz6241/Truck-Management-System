@@ -69,6 +69,46 @@ export async function addDieselRecord(data: {
   }
 }
 
+export async function addDieselRecords(records: {
+  vehicleId: number;
+  driverId?: number;
+  date: Date;
+  liters: number;
+  pricePerLiter: number;
+  totalAmount: number;
+  odometer?: number;
+}[]) {
+  try {
+    // We use createMany for efficiency if supported, otherwise loop (Prisma createMany is usually fine)
+    // However, if we need individual results back (for onSuccess in UI), we might need to do individual creates or a transaction
+    const results = await db.$transaction(
+      records.map((data) =>
+        db.diesel.create({
+          data: {
+            vehicleId: data.vehicleId,
+            driverId: data.driverId,
+            date: data.date,
+            liters: data.liters,
+            pricePerLiter: data.pricePerLiter,
+            totalAmount: data.totalAmount,
+            odometer: data.odometer,
+          },
+          include: {
+            vehicle: true,
+            driver: true,
+          },
+        })
+      )
+    );
+
+    revalidatePath("/admin/diesel");
+    return { success: true, data: results };
+  } catch (error) {
+    console.error("Error adding diesel records:", error);
+    return { success: false, error: (error as Error).message || "Failed to add records" };
+  }
+}
+
 export async function updateDieselRecord(id: number, data: {
   vehicleId: number;
   driverId?: number;
@@ -99,6 +139,47 @@ export async function updateDieselRecord(id: number, data: {
   } catch (error) {
     console.error("Error updating diesel record:", error);
     return { success: false, error: (error as Error).message || "Failed to update record" };
+  }
+}
+
+export async function bulkUpdateDieselPrices(startDate: Date, endDate: Date, price: number) {
+  try {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const records = await db.diesel.findMany({
+      where: {
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+    });
+
+    if (records.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    const updatePromises = records.map((record) => {
+      const newTotal = record.liters * price;
+      return db.diesel.update({
+        where: { id: record.id },
+        data: {
+          pricePerLiter: price,
+          totalAmount: newTotal,
+        },
+      });
+    });
+
+    await db.$transaction(updatePromises);
+
+    revalidatePath("/admin/diesel");
+    return { success: true, count: records.length };
+  } catch (error) {
+    console.error("Error bulk updating diesel prices:", error);
+    return { success: false, error: (error as Error).message || "Failed to update prices" };
   }
 }
 

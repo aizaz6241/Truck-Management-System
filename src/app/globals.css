@@ -1518,3 +1518,42 @@ button {
     grid-template-columns: 1fr; /* Stack charts on mobile */
   }
 }
+
+/* Diesel Date Separator Styles */
+.diesel-date-separator-row {
+  background-color: #f9fafb !important;
+}
+
+.diesel-date-separator-cell {
+  padding: 1.5rem 1.5rem 0.5rem !important;
+  border-bottom: none !important;
+}
+
+.diesel-date-separator-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.diesel-date-separator-text {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+}
+
+.diesel-date-separator-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, #e5e7eb, transparent);
+}
+
+.diesel-table-row:first-of-type .diesel-date-separator-cell {
+  padding-top: 1rem !important;
+}

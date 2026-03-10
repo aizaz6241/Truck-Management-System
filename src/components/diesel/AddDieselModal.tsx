@@ -1,17 +1,29 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { addDieselRecord, updateDieselRecord } from "@/actions/diesel";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  addDieselRecord,
+  updateDieselRecord,
+  addDieselRecords,
+} from "@/actions/diesel";
+import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import styles from "./AddDieselModal.module.css";
 import { useLanguage } from "../LanguageProvider";
+
+interface DieselRow {
+  id: string; // Dynamic ID for React keys
+  vehicleId: string;
+  driverId: string;
+  liters: string;
+  odometer: string;
+}
 
 interface AddDieselModalProps {
   isOpen: boolean;
   onClose: () => void;
   vehicles: any[];
   drivers: any[];
-  onSuccess: (record: any) => void;
+  onSuccess: (records: any | any[]) => void;
   initialData?: any;
 }
 
@@ -25,76 +37,122 @@ export default function AddDieselModal({
 }: AddDieselModalProps) {
   const { t, isRTL } = useLanguage();
   const [isPending, startTransition] = useTransition();
-  const [vehicleId, setVehicleId] = useState("");
-  const [driverId, setDriverId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [liters, setLiters] = useState("");
-  const [pricePerLiter, setPricePerLiter] = useState("");
-  const [odometer, setOdometer] = useState("");
+  const [rows, setRows] = useState<DieselRow[]>([
+    {
+      id: Math.random().toString(),
+      vehicleId: "",
+      driverId: "",
+      liters: "",
+      odometer: "",
+    },
+  ]);
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setVehicleId(initialData.vehicleId.toString());
-      setDriverId(initialData.driverId ? initialData.driverId.toString() : "");
       setDate(new Date(initialData.date).toISOString().split("T")[0]);
-      setLiters(initialData.liters.toString());
-      setPricePerLiter(initialData.pricePerLiter.toString());
-      setOdometer(initialData.odometer ? initialData.odometer.toString() : "");
+      setRows([
+        {
+          id: initialData.id.toString(),
+          vehicleId: initialData.vehicleId.toString(),
+          driverId: initialData.driverId ? initialData.driverId.toString() : "",
+          liters: initialData.liters.toString(),
+          odometer: initialData.odometer ? initialData.odometer.toString() : "",
+        },
+      ]);
     } else if (isOpen && !initialData) {
-      setVehicleId("");
-      setDriverId("");
       setDate(new Date().toISOString().split("T")[0]);
-      setLiters("");
-      setPricePerLiter("");
-      setOdometer("");
+      setRows([
+        {
+          id: Math.random().toString(),
+          vehicleId: "",
+          driverId: "",
+          liters: "",
+          odometer: "",
+        },
+      ]);
     }
   }, [isOpen, initialData]);
 
-  const calculateTotal = () => {
-    const l = parseFloat(liters) || 0;
-    const p = parseFloat(pricePerLiter) || 0;
-    return (l * p).toFixed(2);
+  const handleAddRow = () => {
+    setRows([
+      ...rows,
+      {
+        id: Math.random().toString(),
+        vehicleId: "",
+        driverId: "",
+        liters: "",
+        odometer: "",
+      },
+    ]);
+  };
+
+  const handleRemoveRow = (id: string) => {
+    if (rows.length > 1) {
+      setRows(rows.filter((row) => row.id !== id));
+    }
+  };
+
+  const handleRowChange = (
+    id: string,
+    field: keyof DieselRow,
+    value: string,
+  ) => {
+    setRows(
+      rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vehicleId || !liters || !pricePerLiter) return;
+    if (rows.some((row) => !row.vehicleId || !row.liters)) {
+      alert("Please fill in vehicle and liters for all rows.");
+      return;
+    }
 
     startTransition(async () => {
-      const payload = {
-        vehicleId: parseInt(vehicleId),
-        driverId: driverId ? parseInt(driverId) : undefined,
-        date: new Date(date),
-        liters: parseFloat(liters),
-        pricePerLiter: parseFloat(pricePerLiter),
-        totalAmount: parseFloat(calculateTotal()),
-        odometer: odometer ? parseFloat(odometer) : undefined,
-      };
-
-      let res;
       if (initialData) {
-        res = await updateDieselRecord(initialData.id, payload);
-      } else {
-        res = await addDieselRecord(payload);
-      }
-
-      if (res.success && res.data) {
-        const vehicle = vehicles.find((v) => v.id === parseInt(vehicleId));
-        const driver = drivers.find((d) => d.id === parseInt(driverId));
-
-        const fullRecord = {
-          ...res.data,
-          vehicle,
-          driver,
+        // Single update
+        const payload = {
+          vehicleId: parseInt(rows[0].vehicleId),
+          driverId: rows[0].driverId ? parseInt(rows[0].driverId) : undefined,
+          date: new Date(date),
+          liters: parseFloat(rows[0].liters),
+          pricePerLiter: 0, // Requested to remove price input, using 0 as fallback
+          totalAmount: 0,
+          odometer: rows[0].odometer ? parseFloat(rows[0].odometer) : undefined,
         };
-
-        onSuccess(fullRecord);
-        onClose();
+        const res = await updateDieselRecord(initialData.id, payload);
+        if (res.success && res.data) {
+          const vehicle = vehicles.find(
+            (v) => v.id === parseInt(rows[0].vehicleId),
+          );
+          const driver = drivers.find(
+            (d) => d.id === parseInt(rows[0].driverId),
+          );
+          onSuccess({ ...res.data, vehicle, driver });
+          onClose();
+        } else {
+          alert(res.error || "Failed to update record");
+        }
       } else {
-        alert(
-          res.error ||
-            (initialData ? "Failed to update record" : "Failed to add record"),
-        );
+        // Batch add
+        const records = rows.map((row) => ({
+          vehicleId: parseInt(row.vehicleId),
+          driverId: row.driverId ? parseInt(row.driverId) : undefined,
+          date: new Date(date),
+          liters: parseFloat(row.liters),
+          pricePerLiter: 0, // Requested to remove price input
+          totalAmount: 0,
+          odometer: row.odometer ? parseFloat(row.odometer) : undefined,
+        }));
+        const res = await addDieselRecords(records);
+        if (res.success && res.data) {
+          onSuccess(res.data);
+          onClose();
+        } else {
+          alert(res.error || "Failed to add records");
+        }
       }
     });
   };
@@ -106,7 +164,9 @@ export default function AddDieselModal({
       className={styles.overlay}
       style={{ direction: isRTL ? "rtl" : "ltr" }}
     >
-      <div className={styles.modal}>
+      <div
+        className={`${styles.modal} ${!initialData ? styles.modalBatch : ""}`}
+      >
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerContent}>
@@ -124,8 +184,8 @@ export default function AddDieselModal({
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.fieldsContainer}>
-            {/* Row 1: Date & Vehicle */}
-            <div className={styles.row}>
+            {/* Single Date Section */}
+            <div className={styles.batchDateSection}>
               <div className={styles.field}>
                 <label className={styles.label}>{t("diesel.date")}</label>
                 <div className={styles.inputWrapper}>
@@ -138,73 +198,58 @@ export default function AddDieselModal({
                   />
                 </div>
               </div>
-
-              <div className={styles.field}>
-                <label className={styles.label}>{t("diesel.vehicle")}</label>
-                <div className={styles.inputWrapper}>
-                  <select
-                    className={styles.select}
-                    value={vehicleId}
-                    onChange={(e) => setVehicleId(e.target.value)}
-                    required
-                  >
-                    <option value="">{t("trip.selectVehicle")}</option>
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.number}
-                      </option>
-                    ))}
-                  </select>
-                  <div
-                    className={styles.selectIcon}
-                    style={isRTL ? { right: "auto", left: "1rem" } : {}}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Row 2: Driver & Odometer */}
-            <div className={styles.row}>
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  {t("diesel.driver")}{" "}
-                  <span className={styles.optional}>
-                    {t("diesel.optional")}
-                  </span>
-                </label>
-                <div className={styles.inputWrapper}>
-                  {drivers.length === 1 ? (
-                    <input
-                      type="text"
-                      className={`${styles.input} ${styles.readOnly}`}
-                      value={drivers[0].name}
-                      readOnly
-                      disabled
-                      style={{
-                        backgroundColor: "#f3f4f6",
-                        color: "#6b7280",
-                        cursor: "not-allowed",
-                      }}
-                    />
-                  ) : (
-                    <>
+            {/* Dynamic Rows Section */}
+            <div className={styles.rowsScrollArea}>
+              {rows.map((row, index) => (
+                <div key={row.id} className={styles.batchRow}>
+                  <div className={styles.rowHeader}>
+                    <span className={styles.rowNumber}>
+                      {t("diesel.vehicle")} {index + 1}
+                    </span>
+                    {!initialData && rows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRow(row.id)}
+                        className={styles.btnRemoveRow}
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.rowGrid}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        {t("diesel.vehicle")}
+                      </label>
                       <select
                         className={styles.select}
-                        value={driverId}
-                        onChange={(e) => setDriverId(e.target.value)}
+                        value={row.vehicleId}
+                        onChange={(e) =>
+                          handleRowChange(row.id, "vehicleId", e.target.value)
+                        }
+                        required
+                      >
+                        <option value="">{t("trip.selectVehicle")}</option>
+                        {vehicles.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.number}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        {t("diesel.driver")}
+                      </label>
+                      <select
+                        className={styles.select}
+                        value={row.driverId}
+                        onChange={(e) =>
+                          handleRowChange(row.id, "driverId", e.target.value)
+                        }
                       >
                         <option value="">{t("diesel.selectDriver")}</option>
                         {drivers.map((d) => (
@@ -213,117 +258,63 @@ export default function AddDieselModal({
                           </option>
                         ))}
                       </select>
-                      <div
-                        className={styles.selectIcon}
-                        style={isRTL ? { right: "auto", left: "1rem" } : {}}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          fill="currentColor"
-                          viewBox="0 0 16 16"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"
-                          />
-                        </svg>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        {t("diesel.volume")}
+                      </label>
+                      <div className={styles.inputWrapper}>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className={styles.input}
+                          value={row.liters}
+                          onChange={(e) =>
+                            handleRowChange(row.id, "liters", e.target.value)
+                          }
+                          required
+                          placeholder="0.00"
+                        />
+                        <span className={styles.suffix}>
+                          {t("diesel.liters")}
+                        </span>
                       </div>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  {t("diesel.odometer")}{" "}
-                  <span className={styles.optional}>
-                    {t("diesel.optional")}
-                  </span>
-                </label>
-                <div className={styles.inputWrapper}>
-                  <input
-                    type="number"
-                    className={styles.input}
-                    value={odometer}
-                    onChange={(e) => setOdometer(e.target.value)}
-                    placeholder={t("diesel.odometerPlaceholder")}
-                  />
-                  <div
-                    className={styles.suffix}
-                    style={isRTL ? { right: "auto", left: "1rem" } : {}}
-                  >
-                    {t("diesel.km")}
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        {t("diesel.odometer")}
+                      </label>
+                      <div className={styles.inputWrapper}>
+                        <input
+                          type="number"
+                          className={styles.input}
+                          value={row.odometer}
+                          onChange={(e) =>
+                            handleRowChange(row.id, "odometer", e.target.value)
+                          }
+                          placeholder="KM"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
 
-            {/* Calculations Section */}
-            <div className={styles.calcCard}>
-              <div className={styles.row}>
-                <div className={styles.field}>
-                  <label className={styles.label}>{t("diesel.volume")}</label>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className={styles.input}
-                      value={liters}
-                      onChange={(e) => setLiters(e.target.value)}
-                      required
-                      placeholder="0.00"
-                    />
-                    <span
-                      className={styles.suffix}
-                      style={isRTL ? { right: "auto", left: "1rem" } : {}}
-                    >
-                      {t("diesel.liters")}
-                    </span>
-                  </div>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>{t("diesel.rate")}</label>
-                  <div className={styles.inputWrapper}>
-                    <span
-                      className={styles.prefix}
-                      style={isRTL ? { left: "auto", right: "1rem" } : {}}
-                    >
-                      {t("diesel.currency")}
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className={`${styles.input} ${styles.inputWithPrefix}`}
-                      style={
-                        isRTL
-                          ? { paddingLeft: "1rem", paddingRight: "3rem" }
-                          : {}
-                      }
-                      value={pricePerLiter}
-                      onChange={(e) => setPricePerLiter(e.target.value)}
-                      required
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.totalRow}>
-                <div className={styles.totalLabel}>
-                  <span className={styles.totalTitle}>{t("diesel.total")}</span>
-                  <span className={styles.totalSubtitle}>
-                    {t("diesel.autocalc")}
-                  </span>
-                </div>
-                <div className={styles.totalValueBox}>
-                  <span className={styles.currency}>
-                    {t("diesel.currency")}
-                  </span>
-                  <span className={styles.amount}>{calculateTotal()}</span>
-                </div>
-              </div>
-            </div>
+            {!initialData && (
+              <button
+                type="button"
+                onClick={handleAddRow}
+                className={styles.btnAddRow}
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span>
+                  {t("diesel.addAnotherVehicle") || "Add Another Vehicle"}
+                </span>
+              </button>
+            )}
           </div>
 
           <div className={styles.actions}>

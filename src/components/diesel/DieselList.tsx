@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { deleteDieselRecord } from "@/actions/diesel";
 import AddDieselModal from "./AddDieselModal";
 import {
@@ -10,10 +10,12 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   DocumentArrowDownIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import SetDieselPriceModal from "./SetDieselPriceModal";
 
 interface DieselListProps {
   initialData: any[];
@@ -47,43 +49,45 @@ export default function DieselList({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const filteredRecords = useMemo(() => {
-    return records.filter((record) => {
-      const matchesSearch =
-        record.vehicle.number
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        (!isDriverView &&
-          (record.driver?.name || "")
+    return records
+      .filter((record) => {
+        const matchesSearch =
+          record.vehicle.number
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()));
+            .includes(searchQuery.toLowerCase()) ||
+          (!isDriverView &&
+            (record.driver?.name || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()));
 
-      const matchesVehicle = filterVehicle
-        ? record.vehicleId.toString() === filterVehicle
-        : true;
-      const matchesDriver = filterDriver
-        ? record.driverId?.toString() === filterDriver
-        : true;
-      const matchesOwnership = filterOwnership
-        ? record.vehicle.ownership === filterOwnership
-        : true;
+        const matchesVehicle = filterVehicle
+          ? record.vehicleId.toString() === filterVehicle
+          : true;
+        const matchesDriver = filterDriver
+          ? record.driverId?.toString() === filterDriver
+          : true;
+        const matchesOwnership = filterOwnership
+          ? record.vehicle.ownership === filterOwnership
+          : true;
 
-      const recordDate = new Date(record.date);
-      const matchesMonth = filterMonth
-        ? recordDate.toISOString().slice(0, 7) === filterMonth
-        : true;
-      const matchesDate = filterDate
-        ? recordDate.toISOString().slice(0, 10) === filterDate
-        : true;
+        const recordDate = new Date(record.date);
+        const matchesMonth = filterMonth
+          ? recordDate.toISOString().slice(0, 7) === filterMonth
+          : true;
+        const matchesDate = filterDate
+          ? recordDate.toISOString().slice(0, 10) === filterDate
+          : true;
 
-      return (
-        matchesSearch &&
-        matchesVehicle &&
-        matchesDriver &&
-        matchesOwnership &&
-        matchesMonth &&
-        matchesDate
-      );
-    });
+        return (
+          matchesSearch &&
+          matchesVehicle &&
+          matchesDriver &&
+          matchesOwnership &&
+          matchesMonth &&
+          matchesDate
+        );
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [
     records,
     searchQuery,
@@ -219,10 +223,13 @@ export default function DieselList({
     doc.save(`Diesel_Records_${new Date().toISOString().split("T")[0]}.pdf`);
   };
 
+  const [showPriceModal, setShowPriceModal] = useState(false);
+
   return (
     <div className="diesel-list-container">
       {/* Controls & Statistics Bar */}
       <div className="diesel-controls-bar">
+        {/* ... existing filters ... */}
         {/* Search */}
         <div className="diesel-search-wrapper">
           <div className="diesel-search-icon">
@@ -320,8 +327,21 @@ export default function DieselList({
           />
         </div>
 
-        {/* Add Button */}
-        <div className="diesel-add-btn-wrapper">
+        {/* Action Buttons */}
+        <div
+          className="diesel-add-btn-wrapper"
+          style={{ display: "flex", gap: "0.5rem" }}
+        >
+          {!isDriverView && (
+            <button
+              onClick={() => setShowPriceModal(true)}
+              className="diesel-add-btn"
+              style={{ backgroundColor: "#10b981", borderColor: "#059669" }}
+            >
+              <CurrencyDollarIcon className="w-5 h-5" />
+              Set Prices
+            </button>
+          )}
           <button
             onClick={handleAdd}
             className={`diesel-add-btn ${
@@ -444,102 +464,142 @@ export default function DieselList({
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map((record) => (
-                  <tr
-                    key={record.id}
-                    className={`diesel-table-row group ${
-                      selectedIds.has(record.id) ? "!bg-amber-50/50" : ""
-                    }`}
-                  >
-                    <td
-                      className="diesel-table-cell"
-                      style={{ padding: "1rem 1rem" }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(record.id)}
-                        onChange={(e) => handleSelectRecord(record.id, e)}
-                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
-                      />
-                    </td>
-                    <td className="diesel-table-cell date">
-                      {new Date(record.date).toLocaleDateString("en-GB", {
+                filteredRecords.map((record, index) => {
+                  const recordDate = new Date(record.date).toLocaleDateString(
+                    "en-GB",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    },
+                  );
+                  const prevRecord = filteredRecords[index - 1];
+                  const prevDate = prevRecord
+                    ? new Date(prevRecord.date).toLocaleDateString("en-GB", {
                         year: "numeric",
-                        month: "short",
+                        month: "long",
                         day: "numeric",
-                      })}
-                    </td>
-                    <td className="diesel-table-cell">
-                      <span className="diesel-badge-vehicle">
-                        {record.vehicle.number}
-                      </span>
-                    </td>
-                    {!isDriverView && (
-                      <td className="diesel-table-cell">
-                        <span
-                          className={`diesel-ownership-badge ${
-                            record.vehicle.ownership === "Taxi" ? "taxi" : "rvt"
-                          }`}
-                        >
-                          {record.vehicle.ownership === "Taxi"
-                            ? `Taxi: ${record.vehicle.ownerName || "Unknown"}`
-                            : "RVT"}
-                        </span>
-                      </td>
-                    )}
-                    {!isDriverView && (
-                      <td className="diesel-table-cell">
-                        {record.driver ? (
-                          <div className="diesel-driver-info">
-                            <div className="diesel-driver-avatar">
-                              {record.driver.name.charAt(0)}
-                            </div>
-                            <span className="diesel-driver-name">
-                              {record.driver.name}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 italic text-xs">
-                            Unassigned
-                          </span>
-                        )}
-                      </td>
-                    )}
-                    <td className="diesel-table-cell diesel-cell-numeric">
-                      {record.liters.toFixed(2)}
-                      <span className="text-gray-400 text-xs ml-1">L</span>
-                    </td>
-                    <td className="diesel-table-cell diesel-cell-numeric">
-                      {record.pricePerLiter.toFixed(2)}
-                    </td>
-                    <td className="diesel-table-cell diesel-cell-numeric">
-                      <span className="diesel-cell-total">
-                        AED {record.totalAmount.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="diesel-table-cell">
-                      <div className="diesel-actions-cell">
-                        <button
-                          onClick={() => handleEdit(record)}
-                          className="diesel-action-btn edit"
-                          title="Edit"
-                        >
-                          <PencilSquareIcon className="w-4 h-4" />
-                        </button>
-                        {!isDriverView && (
-                          <button
-                            onClick={() => handleDelete(record.id)}
-                            disabled={deletingId === record.id}
-                            className="diesel-action-btn delete"
-                            title="Delete"
+                      })
+                    : null;
+                  const showSeparator = recordDate !== prevDate;
+
+                  return (
+                    <Fragment key={record.id}>
+                      {showSeparator && (
+                        <tr className="diesel-date-separator-row">
+                          <td
+                            colSpan={isDriverView ? 7 : 9}
+                            className="diesel-date-separator-cell"
                           >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
+                            <div className="diesel-date-separator-content">
+                              <span className="diesel-date-separator-text">
+                                {recordDate}
+                              </span>
+                              <div className="diesel-date-separator-line"></div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      <tr
+                        className={`diesel-table-row group ${
+                          selectedIds.has(record.id) ? "!bg-amber-50/50" : ""
+                        }`}
+                      >
+                        <td
+                          className="diesel-table-cell"
+                          style={{ padding: "1rem 1rem" }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(record.id)}
+                            onChange={(e) => handleSelectRecord(record.id, e)}
+                            className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="diesel-table-cell date">
+                          {new Date(record.date).toLocaleDateString("en-GB", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </td>
+                        <td className="diesel-table-cell">
+                          <span className="diesel-badge-vehicle">
+                            {record.vehicle.number}
+                          </span>
+                        </td>
+                        {!isDriverView && (
+                          <td className="diesel-table-cell">
+                            <span
+                              className={`diesel-ownership-badge ${
+                                record.vehicle.ownership === "Taxi"
+                                  ? "taxi"
+                                  : "rvt"
+                              }`}
+                            >
+                              {record.vehicle.ownership === "Taxi"
+                                ? `Taxi: ${
+                                    record.vehicle.ownerName || "Unknown"
+                                  }`
+                                : "RVT"}
+                            </span>
+                          </td>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        {!isDriverView && (
+                          <td className="diesel-table-cell">
+                            {record.driver ? (
+                              <div className="diesel-driver-info">
+                                <div className="diesel-driver-avatar">
+                                  {record.driver.name.charAt(0)}
+                                </div>
+                                <span className="diesel-driver-name">
+                                  {record.driver.name}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 italic text-xs">
+                                Unassigned
+                              </span>
+                            )}
+                          </td>
+                        )}
+                        <td className="diesel-table-cell diesel-cell-numeric">
+                          {record.liters.toFixed(2)}
+                          <span className="text-gray-400 text-xs ml-1">L</span>
+                        </td>
+                        <td className="diesel-table-cell diesel-cell-numeric">
+                          {record.pricePerLiter.toFixed(2)}
+                        </td>
+                        <td className="diesel-table-cell diesel-cell-numeric">
+                          <span className="diesel-cell-total">
+                            AED {record.totalAmount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="diesel-table-cell">
+                          <div className="diesel-actions-cell">
+                            <button
+                              onClick={() => handleEdit(record)}
+                              className="diesel-action-btn edit"
+                              title="Edit"
+                            >
+                              <PencilSquareIcon className="w-4 h-4" />
+                            </button>
+                            {!isDriverView && (
+                              <button
+                                onClick={() => handleDelete(record.id)}
+                                disabled={deletingId === record.id}
+                                className="diesel-action-btn delete"
+                                title="Delete"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -552,17 +612,30 @@ export default function DieselList({
         vehicles={vehicles}
         drivers={drivers}
         initialData={editingRecord}
-        onSuccess={(updatedRecord) => {
+        onSuccess={(result) => {
           if (editingRecord) {
-            setRecords(
-              records.map((r) =>
-                r.id === updatedRecord.id ? updatedRecord : r,
-              ),
-            );
+            setRecords(records.map((r) => (r.id === result.id ? result : r)));
           } else {
-            setRecords([updatedRecord, ...records]);
+            // result can be an array in batch mode or a single object
+            if (Array.isArray(result)) {
+              setRecords([...result, ...records]);
+            } else {
+              setRecords([result, ...records]);
+            }
           }
           setShowModal(false);
+        }}
+      />
+
+      <SetDieselPriceModal
+        isOpen={showPriceModal}
+        onClose={() => setShowPriceModal(false)}
+        onSuccess={() => {
+          // Since it's a bulk operation on existing records,
+          // we should ideally re-fetch all data or refresh the page.
+          // The easiest way to ensure consistency is a reload,
+          // or we can just rely on the server revalidation if the parent re-renders.
+          window.location.reload();
         }}
       />
     </div>
